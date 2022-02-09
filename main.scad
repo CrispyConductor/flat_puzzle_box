@@ -1,6 +1,6 @@
 
 // Size of interior cavity of inner box.  The opening faces -X
-inner_box_inner_size = [ 50, 60, 10 ];
+inner_box_inner_size = [ 50, 60, 5 ];
 
 num_sliders = 5;
 
@@ -10,8 +10,8 @@ numeric_positions = [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" ];
 slider_positions = [ for (i = [ 0 : num_sliders ]) numeric_positions ];
 
 // Inner box wall thicknesses
-inner_box_wall_thick = 1.5;
-inner_box_bottom_thick = 1.5;
+inner_box_wall_thick = 1.2;
+inner_box_bottom_thick = 1.2;
 inner_box_top_thick = 1.5;
 // Calculated inner box main outer dimensions, not including rails and pins on the top, or handle on the front.
 inner_box_main_outer_size = [
@@ -34,19 +34,24 @@ gate_inner_box_top_clearance_z = 0.2;
 // Height that the pins rise above the top of the inner box.
 inner_box_pin_height = gate_pin_contact_height + gate_inner_box_top_clearance_z + slider_wing_play_z;
 // Minimum clearance between the tops of the pins on the inner box and the bottoms of the slider wings & detent arm
-pin_wing_clearance = 0.2;
+pin_wing_clearance_z = 0.2;
 
-outer_box_top_thick = 2.5;
-// Thickness of the top wing
-slider_top_wing_thick = (1/3) * outer_box_top_thick;
+// Minimum thickness at thinnest point of outer box top
+outer_box_min_top_thick = 1.7;
+// Thickess of the slider top wing plate
+slider_top_wing_thick = 1.0;
+// Depth of the detent hole
+detent_height = 0.4;
+// Thickness of the outer box top at its thickest point
+outer_box_top_thick = outer_box_min_top_thick + slider_top_wing_thick + detent_height;
 // Thickness of the bottom wing; thicker values are stiffer but bulkier
-slider_bottom_wing_thick = 2;
+slider_bottom_wing_thick = 1.5;
 
 // Size of inner cavity in outer box.
 outer_box_inner_size = inner_box_main_outer_size + [
     0,
     inner_box_play_y,
-    inner_box_pin_height + pin_wing_clearance + slider_bottom_wing_thick + slider_wing_play_z
+    inner_box_pin_height + pin_wing_clearance_z + slider_bottom_wing_thick + slider_wing_play_z
 ];
 outer_box_wall_thick = 1.5;
 outer_box_bottom_thick = 1.5;
@@ -124,6 +129,7 @@ slider_gate_opening = [ for (i = [ 0 : num_sliders - 1 ]) max(min_gate_opening, 
 slider_gate_depth = max([ for (i = [ 0 : num_sliders - 1 ]) slider_positions_y[i][0] - slider_positions_y[i][len(slider_positions_y[i]) - 1] + slider_gate_opening[i] ]);
 // Width of slider gate.  Value is arbitrary and partly controls strength of gates versus strength of pins.
 slider_gate_width = 0.5 * slider_bottom_wing_width_right;
+assert(slider_gate_width < slider_bottom_wing_width_left + slider_bottom_wing_width_right - slider_gate_width);
 // Extra clearance between bottom of slider gate and top of inner box, in addition to existing plays and clearances.
 slider_gate_inner_box_top_clearance_extra = 0;
 // Height of the gate component of the slider
@@ -138,7 +144,16 @@ echo("slider_gate_opening", slider_gate_opening);
 // Clearances around box front cutouts for inserting sliders
 outer_box_front_slider_cutout_clearance = 0.2;
 // Width of the top rails on the inner box
-inner_box_top_rail_depth = slider_positions_y_begin - slider_gate_depth / 2 - outer_box_wall_thick - inner_box_play_y/2;
+inner_box_top_rail_depth = slider_positions_y_begin - slider_gate_depth / 2 - outer_box_wall_thick;
+
+// Amount of clearance in the X dimension between a pin and its gate when the box is closed.
+pin_gate_closed_clearance_x = 0.2;
+// Size of pin in X dimension.  This is calculated to fit underneath the individual slider's top wing footprint.
+inner_box_pin_width = slider_top_wing_width / 2 + slider_bottom_wing_width_right - slider_gate_width - pin_gate_closed_clearance_x;
+// Extra clearance (in addition to inner_box_play_y) between pins and gates in Y dimension
+pin_gate_clearance_y_extra = 0.2;
+// Size of pins in Y dimension
+inner_box_pin_depth = min(slider_gate_opening) - inner_box_play_y - 2 * pin_gate_clearance_y_extra;
 
 module Slider(slider_num, position_num) {
     
@@ -171,12 +186,21 @@ module Slider(slider_num, position_num) {
         translate([ slider_bottom_wing_width_right - slider_gate_width, 0, 0 ])
             difference() {
                 // Body of gate
-                translate([ 0, -slider_gate_depth/2, 0 ])
-                    cube([ slider_gate_width, slider_gate_depth, slider_gate_height ]);
+                //translate([ 0, -slider_gate_depth/2, 0 ])
+                    //cube([ slider_gate_width, slider_gate_depth, slider_gate_height ]);
+                translate([ 0, slider_gate_depth/2, 0 ])
+                    rotate([ 90, 0, 0 ])
+                        linear_extrude(slider_gate_depth)
+                            polygon([
+                                [ slider_gate_width, 0 ],
+                                [ 0, 0 ],
+                                [ -slider_gate_height, slider_gate_height ],
+                                [ slider_gate_width, slider_gate_height ]
+                            ]);
                 // Cutout
                 if (position_num != undef)
-                    translate([ -5, outer_box_outer_size.y/2 - slider_positions_y[slider_num][position_num] - slider_gate_opening[slider_num]/2, -5 ])
-                        cube([ slider_gate_width + 10, slider_gate_opening[slider_num], slider_gate_height + 10 ]);
+                    translate([ -100, outer_box_outer_size.y/2 - slider_positions_y[slider_num][position_num] - slider_gate_opening[slider_num]/2, -5 ])
+                        cube([ slider_gate_width + 200, slider_gate_opening[slider_num], slider_gate_height + 10 ]);
             };
     };
     
@@ -193,16 +217,52 @@ module Slider(slider_num, position_num) {
 };
 
 module SliderFrontCutout() {
+    /*
     // Gate shape
     translate([ slider_bottom_wing_width_right - slider_gate_width - outer_box_front_slider_cutout_clearance, 0, -slider_bottom_wing_thick - slider_gate_height - outer_box_front_slider_cutout_clearance ])
         cube([ slider_gate_width + outer_box_front_slider_cutout_clearance*2, slider_top_wing_length, slider_gate_height + outer_box_front_slider_cutout_clearance*2 ]);
     // Bottom wing shape
     translate([ -slider_bottom_wing_width_left - outer_box_front_slider_cutout_clearance, 0, -(slider_bottom_wing_thick + outer_box_front_slider_cutout_clearance*2) ])
         cube([ slider_bottom_wing_width_left + slider_bottom_wing_width_right + outer_box_front_slider_cutout_clearance*2, slider_top_wing_length, slider_bottom_wing_thick + outer_box_front_slider_cutout_clearance*2 ]);
+    */
+    difference() {
+        translate([ 0, outer_box_wall_thick, 0 ])
+            rotate([ 90, 0, 0 ])
+                linear_extrude(outer_box_wall_thick + 10)
+                    offset(r=outer_box_front_slider_cutout_clearance)
+                        translate([ 0, -slider_gate_height - slider_bottom_wing_thick ])
+                            projection()
+                                rotate([ -90, 0, 0 ])
+                                    Slider(0, undef);
+        translate([ 0, 0, 100 ])
+            cube([ 200, 200, 200 ], center=true);
+    };
 };
 
 
 module InnerBox() {
+    module Pin() {
+        translate([ 0, inner_box_pin_depth/2, 0 ])
+        rotate([ 90, 0, 0 ])
+        linear_extrude(inner_box_pin_depth)
+            if (inner_box_pin_width > inner_box_pin_height) {
+                // Pin shape is rectangle next to triangle
+                polygon([
+                    [ 0, 0 ],
+                    [ -inner_box_pin_height, inner_box_pin_height ],
+                    [ -inner_box_pin_width, inner_box_pin_height ],
+                    [ -inner_box_pin_width, 0 ]
+                ]);
+            } else {
+                // Pin shape is just triangle
+                polygon([
+                    [ 0, 0 ],
+                    [ -inner_box_pin_width, inner_box_pin_width ],
+                    [ -inner_box_pin_width, 0 ]
+                ]);
+            }
+    };
+
     difference() {
         union() {
             // Outer solid
@@ -211,6 +271,10 @@ module InnerBox() {
             cube([ inner_box_main_outer_size.x, inner_box_top_rail_depth, inner_box_main_outer_size.z + inner_box_top_rail_height ]);
             translate([ 0, inner_box_main_outer_size.y - inner_box_top_rail_depth, 0 ])
                 cube([ inner_box_main_outer_size.x, inner_box_top_rail_depth, inner_box_main_outer_size.z + inner_box_top_rail_height ]);
+            // Pins
+            for (slider_x = sliders_x) // note: this is relative to the outer box so needs to be offset
+                translate([ slider_x - outer_box_wall_thick + slider_bottom_wing_width_right - slider_gate_width, inner_box_main_outer_size.y / 2, inner_box_main_outer_size.z ])
+                    Pin();
         };
         // Inner cavity
         translate([ -10, inner_box_wall_thick, inner_box_bottom_thick ])
@@ -228,10 +292,11 @@ module OuterBox() {
         // Slots in top
         for (x = sliders_x)
             translate([ x - slot_width/2, -10, outer_box_outer_size.z - outer_box_top_thick - 0.1 ])
-                cube([ slot_width, slot_edge_offset + slot_travel_length + 20, outer_box_top_thick + 10 ]);
+                cube([ slot_width, slot_edge_offset + slot_travel_length + 10, outer_box_top_thick + 10 ]);
         // Slots in front so sliders can be inserted
         for (i = [ 0 : num_sliders - 1 ])
             //translate([ sliders_x[i], 0, outer_box_outer_size.z - slider_top_wing_thick - slider_connector_height/2 + slider_wing_play_z/2 ])
+            //translate([ sliders_x[i], 0, outer_box_outer_size.z - outer_box_top_thick ])
             translate([ sliders_x[i], 0, outer_box_outer_size.z - outer_box_top_thick ])
                 //scale([ outer_box_slider_front_slot_scale_factor, outer_box_slider_front_slot_scale_factor, outer_box_slider_front_slot_scale_factor ])
                     //translate([ 0, 0, -slider_gate_height - slider_bottom_wing_thick - slider_connector_height/2 ])
@@ -252,9 +317,26 @@ module InnerBoxPrint() {
         InnerBox();
 };
 
-module OuterBoxPrint() {
-    rotate([ 90, 0, 0 ])
+module OuterBoxPrint1() {
+    difference() {
         OuterBox();
+        translate([ outer_box_wall_thick, -5, outer_box_outer_size.z - outer_box_top_thick ])
+            cube([ outer_box_outer_size.x - 2 * outer_box_wall_thick, outer_box_outer_size.y + 10, outer_box_top_thick + 10 ]);
+        translate([ -5, outer_box_wall_thick, outer_box_outer_size.z - outer_box_top_thick ])
+            cube([ outer_box_outer_size.x + 10, outer_box_outer_size.y - 2 * outer_box_wall_thick, outer_box_top_thick + 10 ]);
+    };
+    
+    //rotate([ 90, 0, 0 ])
+        //OuterBox();
+};
+
+module OuterBoxPrint2() {
+    difference() {
+        OuterBox();
+        OuterBoxPrint1();
+        //translate([ -5, -5, -10 - outer_box_top_thick ])
+        //    cube(outer_box_outer_size + [ 10, 10, 10 ]);
+    };
 };
 
 module SliderPrint(sn, pn) {
@@ -262,13 +344,17 @@ module SliderPrint(sn, pn) {
         Slider(sn, pn);
 };
 
-InnerBox();
+//InnerBox();
 //OuterBox();
 //Slider(0, 3);
 
 //InnerBoxPrint();
-//OuterBoxPrint();
-//SliderPrint(0, 3);
+//OuterBoxPrint1();
+//OuterBoxPrint2();
+SliderPrint(0, 3);
+
+
+
 
 
 
