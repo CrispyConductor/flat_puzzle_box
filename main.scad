@@ -1,4 +1,5 @@
 
+
 // Size of interior cavity of inner box.  The opening faces -X
 inner_box_inner_size = [ 50, 60, 5 ];
 
@@ -13,15 +14,17 @@ slider_positions = [ for (i = [ 0 : num_sliders ]) numeric_positions ];
 inner_box_wall_thick = 1.2;
 inner_box_bottom_thick = 1.2;
 inner_box_top_thick = 1.5;
+inner_box_end_plate_thick = 2; // thickness of base plate and handles on inner box
+inner_box_side_handle_protrusion = 1.5; // amount handles protrude to the side of the inner box
 // Calculated inner box main outer dimensions, not including rails and pins on the top, or handle on the front.
-inner_box_main_outer_size = [
-    inner_box_inner_size.x + inner_box_wall_thick,
-    inner_box_inner_size.y + 2 * inner_box_wall_thick,
-    inner_box_inner_size.z + inner_box_bottom_thick + inner_box_top_thick
+inner_box_main_outer_size = inner_box_inner_size + [
+    0, // main width of inner box is open at both ends; the end plate caps off one of these ends
+    2 * inner_box_wall_thick,
+    inner_box_bottom_thick + inner_box_top_thick
 ];
 
 // The amount of sliding play/clearance the inner box has inside the outer box in the Y dimension
-inner_box_play_y = 0.4;
+inner_box_play_y = 0.6;
 
 // Minimum height of intersection between pins on inner box and gate fins on the sliders.
 gate_pin_contact_height = 1.5;
@@ -39,7 +42,7 @@ pin_wing_clearance_z = 0.2;
 // Minimum thickness at thinnest point of outer box top
 outer_box_min_top_thick = 1.7;
 // Thickess of the slider top wing plate
-slider_top_wing_thick = 1.0;
+slider_top_wing_thick = 1.2;
 // Depth of the detent hole
 detent_height = 0.4;
 // Thickness of the outer box top at its thickest point
@@ -58,7 +61,7 @@ outer_box_bottom_thick = 1.5;
 outer_box_outer_size = outer_box_inner_size + [ outer_box_wall_thick, 2 * outer_box_wall_thick, outer_box_bottom_thick + outer_box_top_thick ];
 
 // The clearance between the tops of the rails on the inner box and the bottom of the outer box lid.
-inner_box_top_rail_play_z = 0.2;
+inner_box_top_rail_play_z = 0.3;
 // The height of the top rails on the inner box.
 inner_box_top_rail_height = outer_box_inner_size.z - inner_box_main_outer_size.z - inner_box_top_rail_play_z;
 
@@ -107,7 +110,7 @@ slider_bottom_wing_width_left = slider_bottom_wing_width_right / 3;
 
 
 // The Y coordinate corresponding to the center of the slider [connector segment] in its near position
-slider_positions_y_begin = slot_edge_offset + slider_connector_width / 2;
+slider_positions_y_begin = slot_edge_offset + slider_connector_length / 2;
 // The Y coordinate corresponding to the center of the slider [connector segment] in its far position
 slider_positions_y_end = outer_box_outer_size.y - slider_positions_y_begin;
 // Space between positions of the slider for each slider
@@ -154,6 +157,8 @@ inner_box_pin_width = slider_top_wing_width / 2 + slider_bottom_wing_width_right
 pin_gate_clearance_y_extra = 0.2;
 // Size of pins in Y dimension
 inner_box_pin_depth = min(slider_gate_opening) - inner_box_play_y - 2 * pin_gate_clearance_y_extra;
+
+echo("TEST TOP WING OVERHANG VAL", slider_positions_y_begin - slider_top_wing_length/2);
 
 module Slider(slider_num, position_num) {
     
@@ -263,10 +268,28 @@ module InnerBox() {
             }
     };
 
+    module EndPlate() {
+        // Plate at right end of box.  Also includes handles to pull.
+        translate([ inner_box_end_plate_thick, 0, 0 ])
+            rotate([ 0, -90, 0 ])
+                linear_extrude(inner_box_end_plate_thick)
+                    union() {
+                        square([ outer_box_outer_size.z, outer_box_outer_size.y ]);
+                        for (y = [ 0, outer_box_outer_size.y ])
+                            translate([ outer_box_outer_size.z/2, y ])
+                                scale([ outer_box_outer_size.z / inner_box_side_handle_protrusion / 2, 1.0 ])
+                                    circle(r=inner_box_side_handle_protrusion, $fn=50);
+                    };
+    };
+
     difference() {
         union() {
             // Outer solid
             cube(inner_box_main_outer_size);
+            // End Plate
+            translate([ inner_box_main_outer_size.x, -(outer_box_outer_size.y - inner_box_main_outer_size.y) / 2, -outer_box_bottom_thick - inner_box_top_rail_play_z/2 ])
+                //cube([ inner_box_end_plate_thick, outer_box_outer_size.y, outer_box_outer_size.z ]);
+                EndPlate();
             // Top rails
             cube([ inner_box_main_outer_size.x, inner_box_top_rail_depth, inner_box_main_outer_size.z + inner_box_top_rail_height ]);
             translate([ 0, inner_box_main_outer_size.y - inner_box_top_rail_depth, 0 ])
@@ -344,14 +367,14 @@ module SliderPrint(sn, pn) {
         Slider(sn, pn);
 };
 
-//InnerBox();
+InnerBox();
 //OuterBox();
 //Slider(0, 3);
 
 //InnerBoxPrint();
 //OuterBoxPrint1();
 //OuterBoxPrint2();
-SliderPrint(0, 3);
+//SliderPrint(0, 3);
 
 
 
