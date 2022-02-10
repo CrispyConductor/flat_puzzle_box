@@ -388,14 +388,16 @@ module Slider(slider_num, position_num) {
                 // Bottom wing
                 cube([ slider_bottom_wing_width_left + slider_bottom_wing_width_right, slider_gate_depth, slider_bottom_wing_thick ]);
                 // Markings for slider and position
-                translate([ 0, slider_gate_depth * (3/4), slider_bottom_wing_thick/2 ])
-                    rotate([ 0, -90, 0 ])
-                        rotate([ 0, 0, -90 ])
-                            BinaryPips(slider_num, num_sliders-1, slider_gate_depth/2, slider_bottom_wing_thick);
-                translate([ 0, slider_gate_depth * (1/4), slider_bottom_wing_thick/2 ])
-                    rotate([ 0, -90, 0 ])
-                        rotate([ 0, 0, -90 ])
-                            BinaryPips(position_num, len(slider_positions[slider_num])-1, slider_gate_depth/2, slider_bottom_wing_thick);
+                if (slider_num != undef && position_num != undef) {
+                    translate([ 0, slider_gate_depth * (3/4), slider_bottom_wing_thick/2 ])
+                        rotate([ 0, -90, 0 ])
+                            rotate([ 0, 0, -90 ])
+                                BinaryPips(slider_num, num_sliders-1, slider_gate_depth/2, slider_bottom_wing_thick);
+                    translate([ 0, slider_gate_depth * (1/4), slider_bottom_wing_thick/2 ])
+                        rotate([ 0, -90, 0 ])
+                            rotate([ 0, 0, -90 ])
+                                BinaryPips(position_num, len(slider_positions[slider_num])-1, slider_gate_depth/2, slider_bottom_wing_thick);
+                }
             };
     };
     
@@ -613,10 +615,10 @@ module SliderPrint(sn, pn) {
 
 //InnerBox();
 //OuterBox();
-Slider(0, 3);
+//Slider(0, 3);
 
 //InnerBoxPrint();
-//OuterBoxPrint1();
+OuterBoxPrint1();
 //OuterBoxPrint2();
 //SliderPrint(0, 3);
 
