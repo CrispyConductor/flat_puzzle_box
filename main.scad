@@ -44,7 +44,7 @@ outer_box_min_top_thick = 1.7;
 // Thickess of the slider top wing plate
 slider_top_wing_thick = 1.2;
 // Depth of the detent hole
-detent_height = 0.4;
+detent_height = 0.5;
 // Thickness of the outer box top at its thickest point
 outer_box_top_thick = outer_box_min_top_thick + slider_top_wing_thick + detent_height;
 // Thickness of the bottom wing; thicker values are stiffer but bulkier
@@ -186,7 +186,7 @@ echo("TEST TOP WING OVERHANG VAL", slider_positions_y_begin - slider_top_wing_le
 max_detent_peg_size_y_by_slider = [ for (posar = slider_positions) slider_travel_length / (len(posar) - 1) ];
 max_detent_peg_size_y = min(max_detent_peg_size_y_by_slider);
 // Size of the detent peg in the Y dimension (depth)
-detent_peg_size_y = min(detent_height, max_detent_peg_size_y);
+detent_peg_size_y = min(detent_height * 2, max_detent_peg_size_y);
 // Minimum Y distance from the Y center of the detent pin on the slider to the edge of the top wing
 detent_peg_edge_dist_min = detent_peg_size_y / 2;
 // Maximum distance.  Multiplier is arbitrary and determines the range of how close to the edge the detent peg must be.
@@ -451,7 +451,6 @@ module SliderPrint(sn, pn) {
 //InnerBox();
 OuterBox();
 //Slider(0, 3);
-//DetentPeg(10);
 
 //InnerBoxPrint();
 //OuterBoxPrint1();
