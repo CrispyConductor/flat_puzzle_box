@@ -65,16 +65,36 @@ inner_box_top_rail_play_z = 0.3;
 // The height of the top rails on the inner box.
 inner_box_top_rail_height = outer_box_inner_size.z - inner_box_main_outer_size.z - inner_box_top_rail_play_z;
 
+// Clearance between each slider and either the adjacent slider or the slot wall in the X dimension
+slider_top_wing_clearance_x = 0.4;
+
 // Width of margins on the +x and -x sides of the box topa
 outer_box_top_margins_x_min = outer_box_outer_size.x / 10; // can be an arbitrary number
 outer_box_top_margins_x = max(outer_box_top_margins_x_min, outer_box_wall_thick);
 
+// Effective width on the top of the outer box that can be used for sliders.
+effective_slider_area_width = outer_box_outer_size.x - 2*outer_box_top_margins_x - 2*slider_top_wing_clearance_x;
+// The target width of the walls between sliders.  This is arbitrary, and can be 0.
+target_between_slider_wall_width = (1/30) * effective_slider_area_width;
+// Minimum wall width.  If target is below the minimum, walls will be removed entirely.
+min_between_slider_wall_width = 2;
+// The chosen width of walls in between sliders, or 0 to indicate no walls.
+between_slider_wall_width = target_between_slider_wall_width >= min_between_slider_wall_width ? target_between_slider_wall_width : 0;
+echo("Between Slider Wall Width", between_slider_wall_width);
+
+// The amount of X space in between the top wings of adjacent sliders.  Depends on whether or not there are walls between.
+slider_top_wing_width_between = between_slider_wall_width > 0 ? (between_slider_wall_width + 2*slider_top_wing_clearance_x) : slider_top_wing_clearance_x;
 // Space between sliders
 //slider_spacing = (outer_box_outer_size.x - outer_box_wall_thick) / (num_sliders + 1);
-slider_spacing = (outer_box_outer_size.x - 2*outer_box_top_margins_x) / num_sliders;
+//slider_spacing = effective_slider_area_width / num_sliders;
+slider_spacing = (effective_slider_area_width - slider_top_wing_width_between * (num_sliders - 1)) / num_sliders + slider_top_wing_width_between;
+// Width of the top plate on the slider
+slider_top_wing_width = slider_spacing - slider_top_wing_width_between;
 // The X coordinate of each of the sliders, centered on the slider.
 //sliders_x = [ for (i = [ 0 : num_sliders-1 ]) outer_box_wall_thick + (i + 1) * slider_spacing ];
-sliders_x = [ for (i = [ 0 : num_sliders-1 ]) outer_box_top_margins_x + slider_spacing/2 + i * slider_spacing ];
+sliders_x = [ for (i = [ 0 : num_sliders-1 ]) outer_box_top_margins_x + slider_top_wing_clearance_x + slider_top_wing_width/2 + i * slider_spacing ];
+echo("First/Last Slider Edge Distances", sliders_x[0], outer_box_outer_size.x - sliders_x[len(sliders_x) - 1]);
+//assert(sliders_x[0] == outer_box_outer_size.x - sliders_x[len(sliders_x) - 1]); // first and last slider are equidistant from their nearest edge
 
 // Length of the connector between the top and bottom parts of the slider.  Larger values are stronger but reduce travel length and compress symbols.  The multiplier is arbitrarily chosen.  This is the main parameter to tweak for altering travel distance vs slider stabilization in this dimension.
 slider_connector_length = (1/12) * outer_box_outer_size.y;
@@ -90,18 +110,13 @@ slider_top_wing_length = (2/3) * (outer_box_outer_size.y - slider_connector_leng
 
 // Width of the 'connector' portion of the slider, the part that rides in the slots.  The multiplier here is arbitrarily chosen.
 //slider_connector_width = (1/6) * inner_box_main_outer_size.x / num_sliders;
-slider_connector_width = (1/5) * (outer_box_outer_size.x - 2*outer_box_top_margins_x) / num_sliders;
+slider_connector_width = (1/5) * slider_spacing;
 // Amount of play the slider has in the X dimension
 slider_play_x = 0.3;
 // The width of the slots in the box
 slot_width = slider_connector_width + slider_play_x;
-// Play of the slider top wing in its slot in the x dimension
-slider_depression_play_x = 0.4;
 
-// Amount of clearance in the Y dimension between adjacent slider top wings
-inter_slider_top_wing_clearance = 0.4;
-// Width of the top plate on the slider
-slider_top_wing_width = slider_spacing - inter_slider_top_wing_clearance;
+
 // Amount the handle on the slider protrudes
 slider_handle_height = 1;
 // Diameter of the handle bump
@@ -110,8 +125,8 @@ slider_handle_depth = slider_top_wing_length / 8;
 slider_connector_height = outer_box_top_thick - slider_top_wing_thick + slider_wing_play_z;
 // Width of bottom wing right-of-center.
 slider_bottom_wing_width_right = slider_top_wing_width / 2;
-// Width of bottom wing left-of-center.
-slider_bottom_wing_width_left = slider_bottom_wing_width_right / 3;
+// Width of bottom wing left-of-center.  Can be reduced so long as it doesn't drop below half the connector width.
+slider_bottom_wing_width_left = max(slider_bottom_wing_width_right / 2.5, slider_connector_width / 2);
 
 
 // The Y coordinate corresponding to the center of the slider [connector segment] in its near position
@@ -332,11 +347,14 @@ module OuterBox() {
                         SliderFrontCutout();
         // Depressions in top for the sliders
         for (x = sliders_x)
+            translate([ x - (slider_top_wing_width + 2*slider_top_wing_clearance_x) / 2, -5, outer_box_outer_size.z - slider_top_wing_thick ])
+                cube([ slider_top_wing_width + 2*slider_top_wing_clearance_x, outer_box_outer_size.y + 10, outer_box_top_thick + 1 ]);
+/*        for (x = sliders_x)
             translate([ x - (slider_top_wing_width + slider_depression_play_x) / 2, -10, outer_box_outer_size.z - slider_top_wing_thick ])
-                cube([ slider_top_wing_width + slider_depression_play_x, 2 * slot_edge_offset + slot_travel_length + 10, slider_top_wing_thick + 10 ]);
+                cube([ slider_top_wing_width + slider_depression_play_x, 2 * slot_edge_offset + slot_travel_length + 10, slider_top_wing_thick + 10 ]);*/
         // Fill in tiny protrusions between depressions.  (Comment this out if space between sliders is increased much)
-        translate([ sliders_x[0], -10, outer_box_outer_size.z - slider_top_wing_thick ])
-            cube([ sliders_x[len(sliders_x) - 1] - sliders_x[0], 2 * slot_edge_offset + slot_travel_length + 20, slider_top_wing_thick + 10 ]);
+/*        translate([ sliders_x[0], -10, outer_box_outer_size.z - slider_top_wing_thick ])
+            cube([ sliders_x[len(sliders_x) - 1] - sliders_x[0], 2 * slot_edge_offset + slot_travel_length + 20, slider_top_wing_thick + 10 ]);*/
     };
 };
 
