@@ -129,7 +129,7 @@ slider_bottom_wing_width_right = slider_top_wing_width / 2;
 slider_bottom_wing_width_left = max(slider_bottom_wing_width_right / 2.5, slider_connector_width / 2);
 
 
-// The Y coordinate corresponding to the center of the slider [connector segment] in its near position
+// The Y coordinate corresponding to the center of the slider [connector segment] in its near position.  (In coordinate space of outer box)
 slider_positions_y_begin = slot_edge_offset + slider_connector_length / 2;
 // The Y coordinate corresponding to the center of the slider [connector segment] in its far position
 slider_positions_y_end = outer_box_outer_size.y - slider_positions_y_begin;
@@ -213,6 +213,9 @@ echo("Detent peg spacing by slider", detent_peg_spacing_by_slider);
 echo("Max detent positions by slider", max_detent_positions_by_slider);
 echo("Slider positions spacing", slider_positions_spacing);
 
+// How far the false gate impressions are inset
+false_gate_indent_width = slider_gate_width / 5;
+
 
 module DetentPeg(width) {
     // Triangular detent peg.  Top flush with XY plane at z=0.  Extends to given width over X, centered at x=0
@@ -280,6 +283,18 @@ module Slider(slider_num, position_num) {
                 if (position_num != undef)
                     translate([ -100, outer_box_outer_size.y/2 - slider_positions_y[slider_num][position_num] - slider_gate_opening[slider_num]/2, -5 ])
                         cube([ slider_gate_width + 200, slider_gate_opening[slider_num], slider_gate_height + 10 ]);
+                // Fake cutouts
+                if (position_num != undef)
+                    for (p = [ position_num % 3 : 3 : len(slider_positions[slider_num]) - 1 ])
+                        translate([ false_gate_indent_width, outer_box_outer_size.y/2 - slider_positions_y[slider_num][p] + slider_gate_opening[slider_num]/2, 0 ])
+                            rotate([ 90, 0, 0 ])
+                                linear_extrude(slider_gate_opening[slider_num])
+                                    polygon([
+                                        [ 0, 0 ],
+                                        [ -slider_gate_height, slider_gate_height ],
+                                        [ -100, slider_gate_height ],
+                                        [ -100, 0 ]
+                                    ]);
             };
     };
     
@@ -449,8 +464,8 @@ module SliderPrint(sn, pn) {
 };
 
 //InnerBox();
-OuterBox();
-//Slider(0, 3);
+//OuterBox();
+Slider(0, 3);
 
 //InnerBoxPrint();
 //OuterBoxPrint1();
