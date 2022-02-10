@@ -65,10 +65,16 @@ inner_box_top_rail_play_z = 0.3;
 // The height of the top rails on the inner box.
 inner_box_top_rail_height = outer_box_inner_size.z - inner_box_main_outer_size.z - inner_box_top_rail_play_z;
 
+// Width of margins on the +x and -x sides of the box topa
+outer_box_top_margins_x_min = outer_box_outer_size.x / 10; // can be an arbitrary number
+outer_box_top_margins_x = max(outer_box_top_margins_x_min, outer_box_wall_thick);
+
 // Space between sliders
-slider_spacing = (outer_box_outer_size.x - outer_box_wall_thick) / (num_sliders + 1);
+//slider_spacing = (outer_box_outer_size.x - outer_box_wall_thick) / (num_sliders + 1);
+slider_spacing = (outer_box_outer_size.x - 2*outer_box_top_margins_x) / num_sliders;
 // The X coordinate of each of the sliders, centered on the slider.
-sliders_x = [ for (i = [ 0 : num_sliders-1 ]) outer_box_wall_thick + (i + 1) * slider_spacing ];
+//sliders_x = [ for (i = [ 0 : num_sliders-1 ]) outer_box_wall_thick + (i + 1) * slider_spacing ];
+sliders_x = [ for (i = [ 0 : num_sliders-1 ]) outer_box_top_margins_x + slider_spacing/2 + i * slider_spacing ];
 
 // Length of the connector between the top and bottom parts of the slider.  Larger values are stronger but reduce travel length and compress symbols.  The multiplier is arbitrarily chosen.  This is the main parameter to tweak for altering travel distance vs slider stabilization in this dimension.
 slider_connector_length = (1/12) * outer_box_outer_size.y;
@@ -83,15 +89,14 @@ slot_edge_offset = (1/3) * (outer_box_outer_size.y - slider_connector_length);
 slider_top_wing_length = (2/3) * (outer_box_outer_size.y - slider_connector_length) + slider_connector_length;
 
 // Width of the 'connector' portion of the slider, the part that rides in the slots.  The multiplier here is arbitrarily chosen.
-slider_connector_width = (1/6) * inner_box_main_outer_size.x / num_sliders;
+//slider_connector_width = (1/6) * inner_box_main_outer_size.x / num_sliders;
+slider_connector_width = (1/5) * (outer_box_outer_size.x - 2*outer_box_top_margins_x) / num_sliders;
 // Amount of play the slider has in the X dimension
 slider_play_x = 0.3;
 // The width of the slots in the box
 slot_width = slider_connector_width + slider_play_x;
 // Play of the slider top wing in its slot in the x dimension
 slider_depression_play_x = 0.4;
-
-// TODO - make sure the geometry makes sense with the gate fin running into the rails and whatnot with respect to this travel distance.  I think it'll be fine.
 
 // Amount of clearance in the Y dimension between adjacent slider top wings
 inter_slider_top_wing_clearance = 0.4;
@@ -367,8 +372,8 @@ module SliderPrint(sn, pn) {
         Slider(sn, pn);
 };
 
-InnerBox();
-//OuterBox();
+//InnerBox();
+OuterBox();
 //Slider(0, 3);
 
 //InnerBoxPrint();
