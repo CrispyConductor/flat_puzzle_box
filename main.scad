@@ -39,6 +39,11 @@ inner_box_pin_height = gate_pin_contact_height + gate_inner_box_top_clearance_z 
 // Minimum clearance between the tops of the pins on the inner box and the bottoms of the slider wings & detent arm
 pin_wing_clearance_z = 0.2;
 
+// Depth of scale markings
+scale_mark_height = 0.3;
+// Width/thickness of scale marking lines
+scale_mark_width = 0.4;
+
 // Minimum thickness at thinnest point of outer box top
 outer_box_min_top_thick = 1.7;
 // Thickess of the slider top wing plate
@@ -46,7 +51,7 @@ slider_top_wing_thick = 1.2;
 // Depth of the detent hole
 detent_height = 0.7;
 // Thickness of the outer box top at its thickest point
-outer_box_top_thick = outer_box_min_top_thick + slider_top_wing_thick + detent_height;
+outer_box_top_thick = outer_box_min_top_thick + max(slider_top_wing_thick + detent_height, scale_mark_height);
 // Thickness of the bottom wing; thicker values are stiffer but bulkier
 slider_bottom_wing_thick = 1.5;
 
@@ -218,6 +223,100 @@ false_gate_indent_width = slider_gate_width / 5;
 // Distance to extend slot length by to give a more positive detent click
 slot_end_extra_clearance_y = 0.4;
 
+scale_left_margin_type = "compact";
+scale_left_margin_slider = 0;
+scale_right_margin_type = "compact";
+scale_right_margin_slider = 0;
+
+
+// Negative cutouts for position tick marks
+module ScaleTickMarks(slider_num, width) {
+    for (y = slider_positions_y[slider_num])
+        translate([ -width/2, y - scale_mark_width/2, -scale_mark_height ])
+            cube([ width, scale_mark_width, scale_mark_height ]);
+};
+
+
+// Determine the font point size such that a character will fit inside the given rectangle.  This is a guesstimate.
+font_width_to_height_ratio = 0.75;
+font_height_to_point_size_multiplier = 0.9;
+function font_size_within_rect(w, h) = min(h * font_height_to_point_size_multiplier, w / font_width_to_height_ratio * font_height_to_point_size_multiplier);
+
+// Full scale with symbol for each position
+module ScaleFull(slider_num, scale_width, scale_align="right") {
+    // Tick marks
+    tick_width = scale_width / 5; // arbitrary multiplier
+    if (scale_align == "right")
+        translate([ scale_width / 2 - tick_width / 2, 0, 0 ])
+            ScaleTickMarks(slider_num, tick_width);
+    if (scale_align == "left")
+        translate([ -scale_width / 2 + tick_width / 2, 0, 0 ])
+            ScaleTickMarks(slider_num, tick_width);
+    // Symbols
+    font_size = font_size_within_rect(scale_width - tick_width, slider_positions_spacing[slider_num]);
+    for (i = [ 0 : len(slider_positions[slider_num])-1 ])
+        translate([ scale_align == "right" ? -tick_width/2 : tick_width/2, slider_positions_y[slider_num][i], -scale_mark_height ])
+            linear_extrude(scale_mark_height)
+                text(slider_positions[slider_num][i], size=font_size, halign="center", valign="center");
+};
+
+// Compact scale with only first and last positions marked with symbol
+module ScaleCompact(slider_num, scale_width, scale_align="right") {
+    // Tick marks
+    tick_width = scale_width / 2; // arbitrary multiplier
+    if (scale_align == "right")
+        translate([ scale_width / 2 - tick_width / 2, 0, 0 ])
+            ScaleTickMarks(slider_num, tick_width);
+    if (scale_align == "left")
+        translate([ -scale_width / 2 + tick_width / 2, 0, 0 ])
+            ScaleTickMarks(slider_num, tick_width);
+    // Symbols
+    font_size = font_size_within_rect(scale_width, slider_positions_y_begin);
+    translate([ 0, slider_positions_y_end + font_size/2 + slider_positions_spacing[slider_num] / 2, -scale_mark_height ])
+        linear_extrude(scale_mark_height)
+            text(slider_positions[slider_num][0], size=font_size, halign="center", valign="center");
+    translate([ 0, slider_positions_y_begin - font_size/2 - slider_positions_spacing[slider_num] / 2, -scale_mark_height ])
+        linear_extrude(scale_mark_height)
+            text(slider_positions[slider_num][len(slider_positions[slider_num])-1], size=font_size, halign="center", valign="center");
+
+};
+
+
+module Scale(slider_num, width, scale_type, scale_align="center") {
+    if (scale_type == "ticks")
+        ScaleTickMarks(slider_num, width);
+    else if (scale_type == "full")
+        ScaleFull(slider_num, width, scale_align);
+    else if (scale_type == "compact")
+        ScaleCompact(slider_num, width, scale_align);
+    else
+        assert(false);
+};
+
+module LeftMarginScale() {
+    translate([ outer_box_top_margins_x/2, 0, outer_box_outer_size.z ])
+        Scale(scale_left_margin_slider, outer_box_top_margins_x, scale_left_margin_type, "right");
+};
+
+module RightMarginScale() {
+    translate([ outer_box_outer_size.x - outer_box_top_margins_x/2, 0, outer_box_outer_size.z ])
+        Scale(scale_right_margin_slider, outer_box_top_margins_x, scale_right_margin_type, "left");
+};
+
+module IntraSliderScale(slider_num) {
+    difference() {
+        ScaleTickMarks(slider_num, slider_spacing);
+        translate([ -(slider_top_wing_width + 2*slider_top_wing_clearance_x)/2, 0, -(scale_mark_height + 10) ])
+            cube([ slider_top_wing_width + 2*slider_top_wing_clearance_x, outer_box_outer_size.y + 10, scale_mark_height + 10 ]);
+        if (slider_num == 0)
+            translate([ -slider_spacing/2, 0, -(scale_mark_height + 10) ])
+                cube([ slider_spacing/2, outer_box_outer_size.y + 10, scale_mark_height + 10 ]);
+        if (slider_num == num_sliders - 1)
+            translate([ 0, 0, -(scale_mark_height + 10) ])
+                cube([ slider_spacing/2, outer_box_outer_size.y + 10, scale_mark_height + 10 ]);
+    };
+};
+
 
 module DetentPeg(width, extraheight=0) {
     // Triangular detent peg.  Top flush with XY plane at z=0.  Extends to given width over X, centered at x=0
@@ -235,8 +334,13 @@ module DetentPeg(width, extraheight=0) {
 module Slider(slider_num, position_num) {
     
     module SliderHandle() {
-        translate([ -slider_top_wing_width/2, -slider_handle_depth/2, 0 ])
-            cube([ slider_top_wing_width, slider_handle_depth, slider_handle_height ]);
+        difference() {
+            translate([ -slider_top_wing_width/2, -slider_handle_depth/2, 0 ])
+                cube([ slider_top_wing_width, slider_handle_depth, slider_handle_height ]);
+            // Index mark
+            translate([ -(slider_top_wing_width + 10)/2, -scale_mark_width/2, slider_handle_height - scale_mark_height ])
+                cube([ slider_top_wing_width + 10, scale_mark_width, 10 ]);
+        };
     };
     
     module SliderTopWing() {
@@ -430,6 +534,14 @@ module OuterBox() {
                         translate([ 0, slider_top_wing_length/2 - detent_peg_edge_dist_by_slider[slidernum], 0 ])
                             DetentPeg(slider_top_wing_width + 2*slider_top_wing_clearance_x);
                     };
+        // Scales on walls between sliders
+        if (between_slider_wall_width > 0) // if there are walls
+            for (i = [ 0 : num_sliders-1 ])
+                translate([ sliders_x[i], 0, outer_box_outer_size.z ])
+                    IntraSliderScale(i);
+        // Scales on margins
+        LeftMarginScale();
+        RightMarginScale();
     };
 };
 
