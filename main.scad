@@ -228,6 +228,28 @@ scale_left_margin_slider = 0;
 scale_right_margin_type = "compact";
 scale_right_margin_slider = 0;
 
+function to_binary_array_helper(n, placeval) = placeval == 1 ? [ n ] : concat([ floor(n / placeval) ], to_binary_array_helper( n - floor(n / placeval) * placeval, placeval / 2));
+function to_binary_array(n, max_n) = to_binary_array_helper(n, 2 ^ (floor(log(max_n) / log(2))));
+module BinaryPips(n, max_n, width, depth) {
+    // Generates a subtractive geometry that will mark a surface with the number in binary.  Surface size is specified as widthxdepth
+    // The numeric digits go from left to right along the X axis, centered on the origin.
+    // The Y dimension is centered on the origin.
+    // The Z dimension is the depth of the marking, configured here.
+    mark_depth = 0.2;
+    mark_width = 0.5;
+    digits = to_binary_array(n, max_n);
+    spacing = width / (len(digits) + 1);
+    for (digitnum = [ 0 : len(digits) - 1 ])
+        translate([ (digitnum + 1) * spacing - width/2, 0, 0 ])
+            if (digits[digitnum] == 0)
+                translate([ -mark_width/2, -mark_width/2, -mark_depth ])
+                    cube([ mark_width, mark_width, mark_depth ]);
+            else
+                translate([ -mark_width/2, -depth/2, -mark_depth ])
+                    cube([ mark_width, depth, mark_depth ]);
+};
+//!BinaryPips(6, 15, 30, 8);
+
 
 // Negative cutouts for position tick marks
 module ScaleTickMarks(slider_num, width) {
@@ -362,7 +384,19 @@ module Slider(slider_num, position_num) {
     
     module SliderBottomWing() {
         translate([ -slider_bottom_wing_width_left, -slider_gate_depth/2, 0 ])
-            cube([ slider_bottom_wing_width_left + slider_bottom_wing_width_right, slider_gate_depth, slider_bottom_wing_thick ]);
+            difference() {
+                // Bottom wing
+                cube([ slider_bottom_wing_width_left + slider_bottom_wing_width_right, slider_gate_depth, slider_bottom_wing_thick ]);
+                // Markings for slider and position
+                translate([ 0, slider_gate_depth * (3/4), slider_bottom_wing_thick/2 ])
+                    rotate([ 0, -90, 0 ])
+                        rotate([ 0, 0, -90 ])
+                            BinaryPips(slider_num, num_sliders-1, slider_gate_depth/2, slider_bottom_wing_thick);
+                translate([ 0, slider_gate_depth * (1/4), slider_bottom_wing_thick/2 ])
+                    rotate([ 0, -90, 0 ])
+                        rotate([ 0, 0, -90 ])
+                            BinaryPips(position_num, len(slider_positions[slider_num])-1, slider_gate_depth/2, slider_bottom_wing_thick);
+            };
     };
     
     module SliderGate() {
@@ -578,8 +612,8 @@ module SliderPrint(sn, pn) {
 };
 
 //InnerBox();
-OuterBox();
-//Slider(0, 3);
+//OuterBox();
+Slider(0, 3);
 
 //InnerBoxPrint();
 //OuterBoxPrint1();
