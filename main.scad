@@ -133,6 +133,8 @@ slider_bottom_wing_width_left = max(slider_bottom_wing_width_right / 2.5, slider
 slider_positions_y_begin = slot_edge_offset + slider_connector_length / 2;
 // The Y coordinate corresponding to the center of the slider [connector segment] in its far position
 slider_positions_y_end = outer_box_outer_size.y - slider_positions_y_begin;
+echo("Slider travel length compare", slider_positions_y_end - slider_positions_y_begin, slider_travel_length);
+//assert(slider_positions_y_end - slider_positions_y_begin == slider_travel_length);  // Make sure the slider travel length equals the spacing between first and last position
 // Space between positions of the slider for each slider
 slider_positions_spacing = [ for (i = [ 0 : num_sliders - 1 ]) (slider_positions_y_end - slider_positions_y_begin) / (len(slider_positions[i]) - 1) ];
 // Y coordinates corresponding to the center of the slider for each slider position for each slider.  The first position is slider_positions_y_end and positions are evenly spaced.
@@ -180,6 +182,51 @@ inner_box_pin_depth = min(slider_gate_opening) - inner_box_play_y - 2 * pin_gate
 
 echo("TEST TOP WING OVERHANG VAL", slider_positions_y_begin - slider_top_wing_length/2);
 
+// Max size of the detent peg in Y dimension so prevent detent sockets from overlapping
+max_detent_peg_size_y_by_slider = [ for (posar = slider_positions) slider_travel_length / (len(posar) - 1) ];
+max_detent_peg_size_y = min(max_detent_peg_size_y_by_slider);
+// Size of the detent peg in the Y dimension (depth)
+detent_peg_size_y = min(detent_height, max_detent_peg_size_y);
+// Minimum Y distance from the Y center of the detent pin on the slider to the edge of the top wing
+detent_peg_edge_dist_min = detent_peg_size_y / 2;
+// Maximum distance.  Multiplier is arbitrary and determines the range of how close to the edge the detent peg must be.
+detent_peg_edge_dist_max = 0.3 * ((slider_top_wing_length - slider_connector_length) / 2 - detent_peg_size_y/2);
+assert(detent_peg_edge_dist_max > detent_peg_edge_dist_min);
+
+// For each slider, determine whether the slider can have 2 detent pins, or just one.
+// This is determined by: If there are 2 detent pins, they must be a whole multiple of the position distance apart.  Check if there's such a multiple that fits the constraints on detent pin edge positioning.
+// The maximum number of detent positions that can fit within the working area of the slider
+max_detent_positions_by_slider = [ for (i = [ 0 : num_sliders - 1 ]) floor((slider_top_wing_length - 2 * detent_peg_edge_dist_min) / slider_positions_spacing[i]) ];
+// The amount of space (Y) between the dual detent pins on a slider.  This may be 0 or negative in some cases where dual pins aren't possible.
+detent_peg_spacing_by_slider = [ for (i = [ 0 : num_sliders-1 ]) (max_detent_positions_by_slider[i] - 1) * slider_positions_spacing[i] ];
+// For each slider, whether or not the sliders positions would allow dual detent pegs.
+can_have_dual_detent_peg_by_slider = [ for (i = [ 0 : num_sliders-1 ]) detent_peg_spacing_by_slider[i] >= 0 && (slider_top_wing_length - detent_peg_spacing_by_slider[i]) / 2 <= detent_peg_edge_dist_max ];
+// Returns true if all elements in the input array are true
+function all_true (ar, i=0) = len(ar) < i ? (ar[i] ? all_true(ar, i+1) : false) : true;
+// Single flag for whether sliders should have dual detent pegs
+dual_detent_pegs = all_true(can_have_dual_detent_peg_by_slider);
+// The distance of the detent peg(s) from the edge of the slider
+detent_peg_edge_dist_by_slider = [ for (i = [ 0 : num_sliders-1 ]) dual_detent_pegs ? (slider_top_wing_length - detent_peg_spacing_by_slider[i]) / 2 : detent_peg_edge_dist_min ];
+echo("Has dual detent pegs", dual_detent_pegs);
+echo("Detent edge dist by slider", detent_peg_edge_dist_by_slider);
+echo("Detent peg spacing by slider", detent_peg_spacing_by_slider);
+echo("Max detent positions by slider", max_detent_positions_by_slider);
+echo("Slider positions spacing", slider_positions_spacing);
+
+
+module DetentPeg(width) {
+    // Triangular detent peg.  Top flush with XY plane at z=0.  Extends to given width over X, centered at x=0
+    translate([ -width/2, 0, 0 ])
+    rotate([ 90, 0, 90 ])
+    linear_extrude(width)
+    polygon([
+        [ detent_peg_size_y / 2, 0 ],
+        [ 0, -detent_height ],
+        [ -detent_peg_size_y / 2, 0 ]
+    ]);
+};
+
+
 module Slider(slider_num, position_num) {
     
     module SliderHandle() {
@@ -190,6 +237,13 @@ module Slider(slider_num, position_num) {
     module SliderTopWing() {
         translate([ -slider_top_wing_width/2, -slider_top_wing_length/2, 0 ])
             cube([ slider_top_wing_width, slider_top_wing_length, slider_top_wing_thick ]);
+        // Detent pegs
+        translate([ 0, -slider_top_wing_length/2 + detent_peg_edge_dist_by_slider[slider_num], 0 ])
+                DetentPeg(slider_top_wing_width);
+        if (dual_detent_pegs) {
+            translate([ 0, slider_top_wing_length/2 - detent_peg_edge_dist_by_slider[slider_num], 0 ])
+                DetentPeg(slider_top_wing_width);
+        }
     };
     
     module SliderConnector() {
@@ -349,12 +403,16 @@ module OuterBox() {
         for (x = sliders_x)
             translate([ x - (slider_top_wing_width + 2*slider_top_wing_clearance_x) / 2, -5, outer_box_outer_size.z - slider_top_wing_thick ])
                 cube([ slider_top_wing_width + 2*slider_top_wing_clearance_x, outer_box_outer_size.y + 10, outer_box_top_thick + 1 ]);
-/*        for (x = sliders_x)
-            translate([ x - (slider_top_wing_width + slider_depression_play_x) / 2, -10, outer_box_outer_size.z - slider_top_wing_thick ])
-                cube([ slider_top_wing_width + slider_depression_play_x, 2 * slot_edge_offset + slot_travel_length + 10, slider_top_wing_thick + 10 ]);*/
-        // Fill in tiny protrusions between depressions.  (Comment this out if space between sliders is increased much)
-/*        translate([ sliders_x[0], -10, outer_box_outer_size.z - slider_top_wing_thick ])
-            cube([ sliders_x[len(sliders_x) - 1] - sliders_x[0], 2 * slot_edge_offset + slot_travel_length + 20, slider_top_wing_thick + 10 ]);*/
+        // Detent sockets
+        for (slidernum = [ 0 : num_sliders - 1 ])
+            for (posnum = [ 0 : len(slider_positions[slidernum]) - 1 ])
+                translate([ sliders_x[slidernum], slider_positions_y[slidernum][posnum], outer_box_outer_size.z - slider_top_wing_thick ])
+                    union() {
+                        translate([ 0, -slider_top_wing_length/2 + detent_peg_edge_dist_by_slider[slidernum], 0 ])
+                            DetentPeg(slider_top_wing_width + 2*slider_top_wing_clearance_x);
+                        translate([ 0, slider_top_wing_length/2 - detent_peg_edge_dist_by_slider[slidernum], 0 ])
+                            DetentPeg(slider_top_wing_width + 2*slider_top_wing_clearance_x);
+                    };
     };
 };
 
@@ -393,6 +451,7 @@ module SliderPrint(sn, pn) {
 //InnerBox();
 OuterBox();
 //Slider(0, 3);
+//DetentPeg(10);
 
 //InnerBoxPrint();
 //OuterBoxPrint1();
