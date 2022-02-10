@@ -12,7 +12,7 @@ slider_positions = [ for (i = [ 0 : num_sliders ]) numeric_positions ];
 
 // Inner box wall thicknesses
 inner_box_wall_thick = 1.2;
-inner_box_bottom_thick = 1.2;
+inner_box_bottom_thick = 0.95;
 inner_box_top_thick = 1.5;
 inner_box_end_plate_thick = 2; // thickness of base plate and handles on inner box
 inner_box_side_handle_protrusion = 1.5; // amount handles protrude to the side of the inner box
@@ -44,7 +44,7 @@ outer_box_min_top_thick = 1.7;
 // Thickess of the slider top wing plate
 slider_top_wing_thick = 1.2;
 // Depth of the detent hole
-detent_height = 0.5;
+detent_height = 0.7;
 // Thickness of the outer box top at its thickest point
 outer_box_top_thick = outer_box_min_top_thick + slider_top_wing_thick + detent_height;
 // Thickness of the bottom wing; thicker values are stiffer but bulkier
@@ -57,7 +57,7 @@ outer_box_inner_size = inner_box_main_outer_size + [
     inner_box_pin_height + pin_wing_clearance_z + slider_bottom_wing_thick + slider_wing_play_z
 ];
 outer_box_wall_thick = 1.5;
-outer_box_bottom_thick = 1.5;
+outer_box_bottom_thick = 0.95;
 outer_box_outer_size = outer_box_inner_size + [ outer_box_wall_thick, 2 * outer_box_wall_thick, outer_box_bottom_thick + outer_box_top_thick ];
 
 // The clearance between the tops of the rails on the inner box and the bottom of the outer box lid.
@@ -66,7 +66,7 @@ inner_box_top_rail_play_z = 0.3;
 inner_box_top_rail_height = outer_box_inner_size.z - inner_box_main_outer_size.z - inner_box_top_rail_play_z;
 
 // Clearance between each slider and either the adjacent slider or the slot wall in the X dimension
-slider_top_wing_clearance_x = 0.4;
+slider_top_wing_clearance_x = 0.3;
 
 // Width of margins on the +x and -x sides of the box topa
 outer_box_top_margins_x_min = outer_box_outer_size.x / 10; // can be an arbitrary number
@@ -215,16 +215,18 @@ echo("Slider positions spacing", slider_positions_spacing);
 
 // How far the false gate impressions are inset
 false_gate_indent_width = slider_gate_width / 5;
+// Distance to extend slot length by to give a more positive detent click
+slot_end_extra_clearance_y = 0.4;
 
 
-module DetentPeg(width) {
+module DetentPeg(width, extraheight=0) {
     // Triangular detent peg.  Top flush with XY plane at z=0.  Extends to given width over X, centered at x=0
     translate([ -width/2, 0, 0 ])
     rotate([ 90, 0, 90 ])
     linear_extrude(width)
     polygon([
         [ detent_peg_size_y / 2, 0 ],
-        [ 0, -detent_height ],
+        [ 0, -(detent_height + extraheight) ],
         [ -detent_peg_size_y / 2, 0 ]
     ]);
 };
@@ -242,10 +244,10 @@ module Slider(slider_num, position_num) {
             cube([ slider_top_wing_width, slider_top_wing_length, slider_top_wing_thick ]);
         // Detent pegs
         translate([ 0, -slider_top_wing_length/2 + detent_peg_edge_dist_by_slider[slider_num], 0 ])
-                DetentPeg(slider_top_wing_width);
+                DetentPeg(slider_top_wing_width, slider_wing_play_z);
         if (dual_detent_pegs) {
             translate([ 0, slider_top_wing_length/2 - detent_peg_edge_dist_by_slider[slider_num], 0 ])
-                DetentPeg(slider_top_wing_width);
+                DetentPeg(slider_top_wing_width, slider_wing_play_z);
         }
     };
     
@@ -403,7 +405,7 @@ module OuterBox() {
             cube(outer_box_inner_size + [ 10, 0, 0 ]);
         // Slots in top
         for (x = sliders_x)
-            translate([ x - slot_width/2, -10, outer_box_outer_size.z - outer_box_top_thick - 0.1 ])
+            translate([ x - slot_width/2, -10 + slot_end_extra_clearance_y, outer_box_outer_size.z - outer_box_top_thick - 0.1 ])
                 cube([ slot_width, slot_edge_offset + slot_travel_length + 10, outer_box_top_thick + 10 ]);
         // Slots in front so sliders can be inserted
         for (i = [ 0 : num_sliders - 1 ])
@@ -464,8 +466,8 @@ module SliderPrint(sn, pn) {
 };
 
 //InnerBox();
-//OuterBox();
-Slider(0, 3);
+OuterBox();
+//Slider(0, 3);
 
 //InnerBoxPrint();
 //OuterBoxPrint1();
