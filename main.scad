@@ -7,8 +7,10 @@ num_sliders = 5;
 
 // Array of string labels to use for numeric slider positions
 numeric_positions = [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" ];
+alpha_positions = [ "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" ];
 // Array, indexed by slider number, of arrays of positions for that slider.
-slider_positions = [ for (i = [ 0 : num_sliders ]) numeric_positions ];
+//slider_positions = [ for (i = [ 0 : num_sliders ]) numeric_positions ];
+slider_positions = [ for (i = [ 0 : num_sliders ]) alpha_positions ];
 
 // Inner box wall thicknesses
 inner_box_wall_thick = 1.2;
@@ -253,7 +255,7 @@ module ScaleTickMarks(slider_num, width) {
 
 
 // Determine the font point size such that a character will fit inside the given rectangle.  This is a guesstimate.
-font_width_to_height_ratio = 0.75;
+font_width_to_height_ratio = 0.85;
 font_height_to_point_size_multiplier = 0.9;
 function font_size_within_rect(w, h) = min(h * font_height_to_point_size_multiplier, w / font_width_to_height_ratio * font_height_to_point_size_multiplier);
 
@@ -412,8 +414,9 @@ module Slider(slider_num, position_num) {
                     translate([ -100, outer_box_outer_size.y/2 - slider_positions_y[slider_num][position_num] - slider_gate_opening[slider_num]/2, -5 ])
                         cube([ slider_gate_width + 200, slider_gate_opening[slider_num], slider_gate_height + 10 ]);
                 // Fake cutouts
+                fake_cutout_interval_modulo = max(ceil(slider_gate_opening[slider_num] / (slider_gate_depth / len(slider_positions[slider_num])) * 2.5), 3);
                 if (position_num != undef)
-                    for (p = [ position_num % 3 : 3 : len(slider_positions[slider_num]) - 1 ])
+                    for (p = [ position_num % fake_cutout_interval_modulo : fake_cutout_interval_modulo : len(slider_positions[slider_num]) - 1 ])
                         translate([ false_gate_indent_width, outer_box_outer_size.y/2 - slider_positions_y[slider_num][p] + slider_gate_opening[slider_num]/2, 0 ])
                             rotate([ 90, 0, 0 ])
                                 linear_extrude(slider_gate_opening[slider_num])
@@ -584,8 +587,8 @@ module SliderPrint(sn, pn) {
 };
 
 //InnerBox();
-//OuterBox();
-Slider(0, 3);
+OuterBox();
+//Slider(0, 3);
 
 //InnerBoxPrint();
 //OuterBoxPrint1();
