@@ -123,7 +123,7 @@ slot_width = slider_connector_width + slider_play_x;
 
 
 // Amount the handle on the slider protrudes
-slider_handle_height = 1;
+slider_handle_height = 1.5;
 // Diameter of the handle bump
 slider_handle_depth = slider_top_wing_length / 8;
 // Height of connecting piece of slider
@@ -173,8 +173,10 @@ echo("slider_gate_opening", slider_gate_opening);
 
 // Clearances around box front cutouts for inserting sliders
 outer_box_front_slider_cutout_clearance = 0.2;
+// Clearance between bottom wing of slider and the top rails in the first and last positions
+bottom_wing_top_rail_clearance = 0.2;
 // Width of the top rails on the inner box
-inner_box_top_rail_depth = slider_positions_y_begin - slider_gate_depth / 2 - outer_box_wall_thick;
+inner_box_top_rail_depth = slider_positions_y_begin - slider_gate_depth / 2 - outer_box_wall_thick - bottom_wing_top_rail_clearance;
 
 // Amount of clearance in the X dimension between a pin and its gate when the box is closed.
 pin_gate_closed_clearance_x = 0.2;
@@ -617,8 +619,8 @@ module SliderPrint(sn, pn) {
 //OuterBox();
 //Slider(0, 3);
 
-//InnerBoxPrint();
-OuterBoxPrint1();
+InnerBoxPrint();
+//OuterBoxPrint1();
 //OuterBoxPrint2();
 //SliderPrint(0, 3);
 
