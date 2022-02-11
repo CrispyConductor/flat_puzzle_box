@@ -90,13 +90,10 @@ echo("Between Slider Wall Width", between_slider_wall_width);
 // The amount of X space in between the top wings of adjacent sliders.  Depends on whether or not there are walls between.
 slider_top_wing_width_between = between_slider_wall_width > 0 ? (between_slider_wall_width + 2*slider_top_wing_clearance_x) : slider_top_wing_clearance_x;
 // Space between sliders
-//slider_spacing = (outer_box_outer_size.x - outer_box_wall_thick) / (num_sliders + 1);
-//slider_spacing = effective_slider_area_width / num_sliders;
 slider_spacing = (effective_slider_area_width - slider_top_wing_width_between * (num_sliders - 1)) / num_sliders + slider_top_wing_width_between;
 // Width of the top plate on the slider
 slider_top_wing_width = slider_spacing - slider_top_wing_width_between;
 // The X coordinate of each of the sliders, centered on the slider.
-//sliders_x = [ for (i = [ 0 : num_sliders-1 ]) outer_box_wall_thick + (i + 1) * slider_spacing ];
 sliders_x = [ for (i = [ 0 : num_sliders-1 ]) outer_box_top_margins_x + slider_top_wing_clearance_x + slider_top_wing_width/2 + i * slider_spacing ];
 echo("First/Last Slider Edge Distances", sliders_x[0], outer_box_outer_size.x - sliders_x[len(sliders_x) - 1]);
 //assert(sliders_x[0] == outer_box_outer_size.x - sliders_x[len(sliders_x) - 1]); // first and last slider are equidistant from their nearest edge
@@ -114,7 +111,6 @@ slot_edge_offset = (1/3) * (outer_box_outer_size.y - slider_connector_length);
 slider_top_wing_length = (2/3) * (outer_box_outer_size.y - slider_connector_length) + slider_connector_length;
 
 // Width of the 'connector' portion of the slider, the part that rides in the slots.  The multiplier here is arbitrarily chosen.
-//slider_connector_width = (1/6) * inner_box_main_outer_size.x / num_sliders;
 slider_connector_width = (1/5) * slider_spacing;
 // Amount of play the slider has in the X dimension
 slider_play_x = 0.3;
@@ -149,8 +145,6 @@ slider_positions_y = [
             slider_positions_y_begin + j * slider_positions_spacing[i]
         ]
 ];
-echo(slider_positions_y);
-echo(slider_positions_spacing);
 // Minimum opening span of the slider gates
 min_gate_opening = 2.5;
 // Size of openings in the slider gate
@@ -186,8 +180,6 @@ inner_box_pin_width = slider_top_wing_width / 2 + slider_bottom_wing_width_right
 pin_gate_clearance_y_extra = 0.2;
 // Size of pins in Y dimension
 inner_box_pin_depth = min(slider_gate_opening) - inner_box_play_y - 2 * pin_gate_clearance_y_extra;
-
-echo("TEST TOP WING OVERHANG VAL", slider_positions_y_begin - slider_top_wing_length/2);
 
 // Max size of the detent peg in Y dimension so prevent detent sockets from overlapping
 max_detent_peg_size_y_by_slider = [ for (posar = slider_positions) slider_travel_length / (len(posar) - 1) ];
@@ -250,7 +242,6 @@ module BinaryPips(n, max_n, width, depth) {
                 translate([ -mark_width/2, -depth/2, -mark_depth ])
                     cube([ mark_width, depth, mark_depth ]);
 };
-//!BinaryPips(6, 15, 30, 8);
 
 
 // Negative cutouts for position tick marks
@@ -404,16 +395,9 @@ module Slider(slider_num, position_num) {
     };
     
     module SliderGate() {
-        echo("Gate echoes");
-        echo(slider_num);
-        echo(position_num);
-        echo(outer_box_outer_size.y/2);
-        echo(slider_positions_y[slider_num][position_num]);
         translate([ slider_bottom_wing_width_right - slider_gate_width, 0, 0 ])
             difference() {
                 // Body of gate
-                //translate([ 0, -slider_gate_depth/2, 0 ])
-                    //cube([ slider_gate_width, slider_gate_depth, slider_gate_height ]);
                 translate([ 0, slider_gate_depth/2, 0 ])
                     rotate([ 90, 0, 0 ])
                         linear_extrude(slider_gate_depth)
@@ -455,14 +439,6 @@ module Slider(slider_num, position_num) {
 };
 
 module SliderFrontCutout() {
-    /*
-    // Gate shape
-    translate([ slider_bottom_wing_width_right - slider_gate_width - outer_box_front_slider_cutout_clearance, 0, -slider_bottom_wing_thick - slider_gate_height - outer_box_front_slider_cutout_clearance ])
-        cube([ slider_gate_width + outer_box_front_slider_cutout_clearance*2, slider_top_wing_length, slider_gate_height + outer_box_front_slider_cutout_clearance*2 ]);
-    // Bottom wing shape
-    translate([ -slider_bottom_wing_width_left - outer_box_front_slider_cutout_clearance, 0, -(slider_bottom_wing_thick + outer_box_front_slider_cutout_clearance*2) ])
-        cube([ slider_bottom_wing_width_left + slider_bottom_wing_width_right + outer_box_front_slider_cutout_clearance*2, slider_top_wing_length, slider_bottom_wing_thick + outer_box_front_slider_cutout_clearance*2 ]);
-    */
     difference() {
         translate([ 0, outer_box_wall_thick, 0 ])
             rotate([ 90, 0, 0 ])
@@ -521,7 +497,6 @@ module InnerBox() {
             cube(inner_box_main_outer_size);
             // End Plate
             translate([ inner_box_main_outer_size.x, -(outer_box_outer_size.y - inner_box_main_outer_size.y) / 2, -outer_box_bottom_thick - inner_box_top_rail_play_z/2 ])
-                //cube([ inner_box_end_plate_thick, outer_box_outer_size.y, outer_box_outer_size.z ]);
                 EndPlate();
             // Top rails
             cube([ inner_box_main_outer_size.x, inner_box_top_rail_depth, inner_box_main_outer_size.z + inner_box_top_rail_height ]);
@@ -551,13 +526,8 @@ module OuterBox() {
                 cube([ slot_width, slot_edge_offset + slot_travel_length + 10, outer_box_top_thick + 10 ]);
         // Slots in front so sliders can be inserted
         for (i = [ 0 : num_sliders - 1 ])
-            //translate([ sliders_x[i], 0, outer_box_outer_size.z - slider_top_wing_thick - slider_connector_height/2 + slider_wing_play_z/2 ])
-            //translate([ sliders_x[i], 0, outer_box_outer_size.z - outer_box_top_thick ])
             translate([ sliders_x[i], 0, outer_box_outer_size.z - outer_box_top_thick ])
-                //scale([ outer_box_slider_front_slot_scale_factor, outer_box_slider_front_slot_scale_factor, outer_box_slider_front_slot_scale_factor ])
-                    //translate([ 0, 0, -slider_gate_height - slider_bottom_wing_thick - slider_connector_height/2 ])
-                        //Slider(i, undef);
-                        SliderFrontCutout();
+                SliderFrontCutout();
         // Depressions in top for the sliders
         for (x = sliders_x)
             translate([ x - (slider_top_wing_width + 2*slider_top_wing_clearance_x) / 2, -5, outer_box_outer_size.z - slider_top_wing_thick ])
@@ -605,8 +575,6 @@ module OuterBoxPrint2() {
     difference() {
         OuterBox();
         OuterBoxPrint1();
-        //translate([ -5, -5, -10 - outer_box_top_thick ])
-        //    cube(outer_box_outer_size + [ 10, 10, 10 ]);
     };
 };
 
@@ -617,9 +585,9 @@ module SliderPrint(sn, pn) {
 
 //InnerBox();
 //OuterBox();
-//Slider(0, 3);
+Slider(0, 3);
 
-InnerBoxPrint();
+//InnerBoxPrint();
 //OuterBoxPrint1();
 //OuterBoxPrint2();
 //SliderPrint(0, 3);
