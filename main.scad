@@ -1,7 +1,7 @@
 
 
 // Size of interior cavity of inner box.  The opening faces -X
-inner_box_inner_size = [ 50, 60, 5 ];
+inner_box_inner_size = [ 50, 80, 5 ];
 
 num_sliders = 5;
 
@@ -255,7 +255,7 @@ module ScaleTickMarks(slider_num, width) {
 
 
 // Determine the font point size such that a character will fit inside the given rectangle.  This is a guesstimate.
-font_width_to_height_ratio = 0.85;
+font_width_to_height_ratio = 0.95;
 font_height_to_point_size_multiplier = 0.9;
 function font_size_within_rect(w, h) = min(h * font_height_to_point_size_multiplier, w / font_width_to_height_ratio * font_height_to_point_size_multiplier);
 
@@ -587,13 +587,13 @@ module SliderPrint(sn, pn) {
 };
 
 //InnerBox();
-OuterBox();
+//OuterBox();
 //Slider(0, 3);
 
 //InnerBoxPrint();
 //OuterBoxPrint1();
 //OuterBoxPrint2();
-//SliderPrint(0, 3);
+SliderPrint(0, 3);
 
 
 
