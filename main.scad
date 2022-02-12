@@ -1,23 +1,111 @@
 
+module FlatPuzzleBoxPart(
+    /* OPTIONS TO SELECT WHAT PART TO MAKE */
+    // Which part of the box to create.  Values are "InnerBox", "OuterBox", or "Slider" for the parts in their native orientations.  For the printable versions, use "InnerBoxPrint", "OuterBoxPrint1", "OuterBoxPrint2", or "SliderPrint".
+    part,
+    // Used for Slider part only.  Which slider number this is, 0-indexed.
+    slider_num = 0,
+    // Used for Slider part only.  Which position number this slider is coded for, 0-indexed.
+    position_num = 0,
+
+    /* PRIMARY OPTIONS */
+    // The string of position labels to use for the primary scale.
+    //primary_scale = "0123456789",
+    primary_scale = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    // The string of position labels to use for the secondary scale, or undef if only one scale.
+    secondary_scale = undef,
+    // Which scale (0 for primary, 1 for secondary) to use for each slider.  This also defines the number of sliders.
+    slider_scales = [ 0, 0, 0, 0, 0 ],
+    // Inner dimensions of box cavity: width, depth, height; when drawer is facing to the right
+    inner_size = [ 50, 80, 5 ],
+
+    /* MISC OPTIONS */
+    // Depth of the detent hole
+    detent_height = 0.7,
+    // Defines the width of the margins on the +x and -x side of the box top, as a fraction of the box width
+    outer_box_top_margin_frac = 0.1,
+    // The width of the separating walls between sliders, as a fraction of the total width of the slider space
+    slider_separator_width_frac = 0.03,
+    // Minimum absolute width of separating walls between sliders.  If the calculated width is below the minimum, separating walls will be removed entirely.
+    min_between_slider_wall_width = 2,
+    // The length of the connecting piece of the slider, as a fraction of the outer box depth.  Larger values are stronger but reduce travel length and compress symbols.  The multiplier is arbitrarily chosen.  This is the main parameter to tweak for altering travel distance vs slider stabilization in this dimension.
+    slider_connector_length_frac = 0.083,
+    // The width of the connecting piece of the slider, as a fraction of the space between the centers of 2 adjacent sliders.  This also determines slot width.
+    slider_connector_width_frac = 0.2,
+    // Amount the handle on the slider protrudes
+    slider_handle_height = 1.5,
+    // The depth (along the length of the slider) of space that the handle takes up, as a fraction of the length of the slider's top wing
+    slider_handle_depth_frac = 0.125,
+    // Minimum opening span of the slider gates.  This ensures proper printing and proper clearances, but if the scale is too compact, may cause adjacent slider positions to also allow through the pins.
+    min_gate_opening = 2.5,
+    // The width of the slider's gate fin, as a fraction of the width of the right half of the bottom wing.
+    slider_gate_width_frac = 0.5,
+
+    /* MARKING AND SCALE OPTIONS */
+    // Depth of scale markings
+    scale_mark_height = 0.3,
+    // Width/thickness of scale marking lines
+    scale_mark_width = 0.4,
+
+    /* THICKNESSES AND MINOR FEATURE DIMENSIONS */
+    // Thicknesses of parts of the inner box
+    inner_box_wall_thick = 1.2,
+    inner_box_bottom_thick = 0.95,
+    inner_box_top_thick = 1.5,
+    // Thickness of the backplate/handle on the end of the inner box
+    inner_box_end_plate_thick = 2,
+    // Distance the inner box handles protrudes to either side of the outer box when closed
+    inner_box_side_handle_protrusion = 1.5,
+    // Minimum thickness at thinnest point of outer box top
+    outer_box_min_top_thick = 1.7,
+    // Other outer box wall thicknesses
+    outer_box_wall_thick = 1.5,
+    outer_box_bottom_thick = 0.95,
+    // Thickess of the slider top wing plate/detent arm
+    slider_top_wing_thick = 1.2,
+    // Thickness of the bottom wing; thicker values are stiffer but bulkier
+    slider_bottom_wing_thick = 1.5,
+    // The fraction of the gate hole width/depth that should be indented for false gates
+    false_gate_indent_width_frac = 0.2,
+
+    /* CLEARANCES AND PLAYS */
+    // The amount of sliding play/clearance the inner box has inside the outer box in the Y dimension
+    inner_box_play_y = 0.6,
+    // Minimum height of intersection between pins on inner box and gate fins on the sliders.
+    gate_pin_contact_height = 1.5,
+    // Amount of play/clearance between slider wings and the slot it rides in.
+    slider_wing_play_z = 0.2,
+    // The minimum amount of clearance between the gates on the bottom of the sliders, and the top of the inner box.
+    gate_inner_box_top_clearance_z = 0.2,
+    // Minimum clearance between the tops of the pins on the inner box and the bottoms of the slider wings
+    pin_wing_clearance_z = 0.2,
+    // The clearance between the tops of the rails on the inner box and the bottom of the outer box lid.
+    inner_box_top_rail_play_z = 0.3,
+    // Clearance between each slider and either the adjacent slider or the slot wall in the X dimension
+    slider_top_wing_clearance_x = 0.3,
+    // Amount of play the slider has in the X dimension
+    slider_play_x = 0.3,
+    // Extra clearance between bottom of slider gate and top of inner box, in addition to existing plays and clearances.
+    slider_gate_inner_box_top_clearance_extra = 0,
+    // Clearances around box front cutouts for inserting sliders
+    outer_box_front_slider_cutout_clearance = 0.2,
+    // Clearance between bottom wing of slider and the top rails in the first and last positions
+    bottom_wing_top_rail_clearance = 0.2,
+    // Amount of clearance in the X dimension between a pin and its gate when the box is closed.  This translates to slop in opening of the box while locked.
+    pin_gate_closed_clearance_x = 0.2,
+    // Extra clearance (in addition to inner_box_play_y) between pins and gates in Y dimension
+    pin_gate_clearance_y_extra = 0.2,
+    // Distance to extend slot length by to give a more positive detent click
+    slot_end_extra_clearance_y = 0.4,
+
+) {
 
 // Size of interior cavity of inner box.  The opening faces -X
-inner_box_inner_size = [ 50, 80, 5 ];
-
-num_sliders = 5;
-
-// Array of string labels to use for numeric slider positions
-numeric_positions = [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" ];
-alpha_positions = [ "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" ];
+inner_box_inner_size = inner_size;
+num_sliders = len(slider_scales);
 // Array, indexed by slider number, of arrays of positions for that slider.
-//slider_positions = [ for (i = [ 0 : num_sliders ]) numeric_positions ];
-slider_positions = [ for (i = [ 0 : num_sliders ]) alpha_positions ];
+slider_positions = [ for (scalenum = slider_scales) [ for (c = (scalenum == 0 ? primary_scale : secondary_scale)) c ] ];
 
-// Inner box wall thicknesses
-inner_box_wall_thick = 1.2;
-inner_box_bottom_thick = 0.95;
-inner_box_top_thick = 1.5;
-inner_box_end_plate_thick = 2; // thickness of base plate and handles on inner box
-inner_box_side_handle_protrusion = 1.5; // amount handles protrude to the side of the inner box
 // Calculated inner box main outer dimensions, not including rails and pins on the top, or handle on the front.
 inner_box_main_outer_size = inner_box_inner_size + [
     0, // main width of inner box is open at both ends; the end plate caps off one of these ends
@@ -25,37 +113,11 @@ inner_box_main_outer_size = inner_box_inner_size + [
     inner_box_bottom_thick + inner_box_top_thick
 ];
 
-// The amount of sliding play/clearance the inner box has inside the outer box in the Y dimension
-inner_box_play_y = 0.6;
-
-// Minimum height of intersection between pins on inner box and gate fins on the sliders.
-gate_pin_contact_height = 1.5;
-// Thickness of the bottom wings
-slider_bottom_thick = 1.5;
-// Amount of play/clearance between slider wings and the slot it rides in.
-slider_wing_play_z = 0.2;
-// The minimum amount of clearance between the gates on the bottom of the sliders, and the top of the inner box.
-gate_inner_box_top_clearance_z = 0.2;
 // Height that the pins rise above the top of the inner box.
 inner_box_pin_height = gate_pin_contact_height + gate_inner_box_top_clearance_z + slider_wing_play_z;
-// Minimum clearance between the tops of the pins on the inner box and the bottoms of the slider wings & detent arm
-pin_wing_clearance_z = 0.2;
 
-// Depth of scale markings
-scale_mark_height = 0.3;
-// Width/thickness of scale marking lines
-scale_mark_width = 0.4;
-
-// Minimum thickness at thinnest point of outer box top
-outer_box_min_top_thick = 1.7;
-// Thickess of the slider top wing plate
-slider_top_wing_thick = 1.2;
-// Depth of the detent hole
-detent_height = 0.7;
 // Thickness of the outer box top at its thickest point
 outer_box_top_thick = outer_box_min_top_thick + max(slider_top_wing_thick + detent_height, scale_mark_height);
-// Thickness of the bottom wing; thicker values are stiffer but bulkier
-slider_bottom_wing_thick = 1.5;
 
 // Size of inner cavity in outer box.
 outer_box_inner_size = inner_box_main_outer_size + [
@@ -63,28 +125,19 @@ outer_box_inner_size = inner_box_main_outer_size + [
     inner_box_play_y,
     inner_box_pin_height + pin_wing_clearance_z + slider_bottom_wing_thick + slider_wing_play_z
 ];
-outer_box_wall_thick = 1.5;
-outer_box_bottom_thick = 0.95;
 outer_box_outer_size = outer_box_inner_size + [ outer_box_wall_thick, 2 * outer_box_wall_thick, outer_box_bottom_thick + outer_box_top_thick ];
 
-// The clearance between the tops of the rails on the inner box and the bottom of the outer box lid.
-inner_box_top_rail_play_z = 0.3;
 // The height of the top rails on the inner box.
 inner_box_top_rail_height = outer_box_inner_size.z - inner_box_main_outer_size.z - inner_box_top_rail_play_z;
 
-// Clearance between each slider and either the adjacent slider or the slot wall in the X dimension
-slider_top_wing_clearance_x = 0.3;
-
-// Width of margins on the +x and -x sides of the box topa
-outer_box_top_margins_x_min = outer_box_outer_size.x / 10; // can be an arbitrary number
+// Width of margins on the +x and -x sides of the box top
+outer_box_top_margins_x_min = outer_box_outer_size.x * outer_box_top_margin_frac;
 outer_box_top_margins_x = max(outer_box_top_margins_x_min, outer_box_wall_thick);
 
 // Effective width on the top of the outer box that can be used for sliders.
 effective_slider_area_width = outer_box_outer_size.x - 2*outer_box_top_margins_x - 2*slider_top_wing_clearance_x;
 // The target width of the walls between sliders.  This is arbitrary, and can be 0.
-target_between_slider_wall_width = (1/30) * effective_slider_area_width;
-// Minimum wall width.  If target is below the minimum, walls will be removed entirely.
-min_between_slider_wall_width = 2;
+target_between_slider_wall_width = slider_separator_width_frac * effective_slider_area_width;
 // The chosen width of walls in between sliders, or 0 to indicate no walls.
 between_slider_wall_width = target_between_slider_wall_width >= min_between_slider_wall_width ? target_between_slider_wall_width : 0;
 echo("Between Slider Wall Width", between_slider_wall_width);
@@ -101,8 +154,9 @@ echo("First/Last Slider Edge Distances", sliders_x[0], outer_box_outer_size.x - 
 //assert(sliders_x[0] == outer_box_outer_size.x - sliders_x[len(sliders_x) - 1]); // first and last slider are equidistant from their nearest edge
 
 // Length of the connector between the top and bottom parts of the slider.  Larger values are stronger but reduce travel length and compress symbols.  The multiplier is arbitrarily chosen.  This is the main parameter to tweak for altering travel distance vs slider stabilization in this dimension.
-slider_connector_length = (1/12) * outer_box_outer_size.y;
+slider_connector_length = slider_connector_length_frac * outer_box_outer_size.y;
 
+// These multipliers here are calculated such that top wing just covers whole slot at one extreme.
 // The length of the part of the slot that the slider travels in
 slot_travel_length = (1/3) * outer_box_outer_size.y + (2/3) * slider_connector_length;
 // The distance that the slider can travel
@@ -113,22 +167,20 @@ slot_edge_offset = (1/3) * (outer_box_outer_size.y - slider_connector_length);
 slider_top_wing_length = (2/3) * (outer_box_outer_size.y - slider_connector_length) + slider_connector_length;
 
 // Width of the 'connector' portion of the slider, the part that rides in the slots.  The multiplier here is arbitrarily chosen.
-slider_connector_width = (1/5) * slider_spacing;
-// Amount of play the slider has in the X dimension
-slider_play_x = 0.3;
+slider_connector_width = slider_connector_width_frac * slider_spacing;
 // The width of the slots in the box
 slot_width = slider_connector_width + slider_play_x;
 
 
-// Amount the handle on the slider protrudes
-slider_handle_height = 1.5;
 // Diameter of the handle bump
-slider_handle_depth = slider_top_wing_length / 8;
+slider_handle_depth = slider_top_wing_length * slider_handle_depth_frac;
 // Height of connecting piece of slider
 slider_connector_height = outer_box_top_thick - slider_top_wing_thick + slider_wing_play_z;
 // Width of bottom wing right-of-center.
 slider_bottom_wing_width_right = slider_top_wing_width / 2;
 // Width of bottom wing left-of-center.  Can be reduced so long as it doesn't drop below half the connector width.
+// The problem with increasing this to the full slider_bottom_wing_width_right is that the front cutouts on the box would then intersect each other if there are no separators between sliders.  There needs to be some space between.
+// TODO: Calculate this based on the actual separation between the box front cutouts.
 slider_bottom_wing_width_left = max(slider_bottom_wing_width_right / 2.5, slider_connector_width / 2);
 
 
@@ -147,17 +199,13 @@ slider_positions_y = [
             slider_positions_y_begin + j * slider_positions_spacing[i]
         ]
 ];
-// Minimum opening span of the slider gates
-min_gate_opening = 2.5;
 // Size of openings in the slider gate
 slider_gate_opening = [ for (i = [ 0 : num_sliders - 1 ]) max(min_gate_opening, slider_positions_spacing[i]) ];
 // Depth (Y dimension/length) of gate at bottom of slider
 slider_gate_depth = max([ for (i = [ 0 : num_sliders - 1 ]) slider_positions_y[i][0] - slider_positions_y[i][len(slider_positions_y[i]) - 1] + slider_gate_opening[i] ]);
 // Width of slider gate.  Value is arbitrary and partly controls strength of gates versus strength of pins.
-slider_gate_width = 0.5 * slider_bottom_wing_width_right;
+slider_gate_width = slider_gate_width_frac * slider_bottom_wing_width_right;
 assert(slider_gate_width < slider_bottom_wing_width_left + slider_bottom_wing_width_right - slider_gate_width);
-// Extra clearance between bottom of slider gate and top of inner box, in addition to existing plays and clearances.
-slider_gate_inner_box_top_clearance_extra = 0;
 // Height of the gate component of the slider
 slider_gate_height = outer_box_inner_size.z - inner_box_main_outer_size.z - slider_bottom_wing_thick - slider_wing_play_z - inner_box_top_rail_play_z - slider_gate_inner_box_top_clearance_extra;
 echo("slider_bottom_wing_width_right", slider_bottom_wing_width_right);
@@ -167,19 +215,11 @@ echo("slider_positions_y[0][0]", slider_positions_y[0][0]);
 echo("slider_positions_y[0][len(slider_positions_y[0]) - 1]", slider_positions_y[0][len(slider_positions_y[0]) - 1]);
 echo("slider_gate_opening", slider_gate_opening);
 
-// Clearances around box front cutouts for inserting sliders
-outer_box_front_slider_cutout_clearance = 0.2;
-// Clearance between bottom wing of slider and the top rails in the first and last positions
-bottom_wing_top_rail_clearance = 0.2;
 // Width of the top rails on the inner box
 inner_box_top_rail_depth = slider_positions_y_begin - slider_gate_depth / 2 - outer_box_wall_thick - bottom_wing_top_rail_clearance;
 
-// Amount of clearance in the X dimension between a pin and its gate when the box is closed.
-pin_gate_closed_clearance_x = 0.2;
 // Size of pin in X dimension.  This is calculated to fit underneath the individual slider's top wing footprint.
 inner_box_pin_width = slider_top_wing_width / 2 + slider_bottom_wing_width_right - slider_gate_width - pin_gate_closed_clearance_x;
-// Extra clearance (in addition to inner_box_play_y) between pins and gates in Y dimension
-pin_gate_clearance_y_extra = 0.2;
 // Size of pins in Y dimension
 inner_box_pin_depth = min(slider_gate_opening) - inner_box_play_y - 2 * pin_gate_clearance_y_extra;
 
@@ -215,9 +255,7 @@ echo("Max detent positions by slider", max_detent_positions_by_slider);
 echo("Slider positions spacing", slider_positions_spacing);
 
 // How far the false gate impressions are inset
-false_gate_indent_width = slider_gate_width / 5;
-// Distance to extend slot length by to give a more positive detent click
-slot_end_extra_clearance_y = 0.4;
+false_gate_indent_width = slider_gate_width * false_gate_indent_width_frac;
 
 scale_left_margin_type = "compact";
 scale_left_margin_slider = 0;
@@ -586,16 +624,32 @@ module SliderPrint(sn, pn) {
         Slider(sn, pn);
 };
 
-//InnerBox();
-//OuterBox();
-//Slider(0, 3);
+if (part == "InnerBox")
+    InnerBox();
+else if (part == "OuterBox")
+    OuterBox();
+else if (part == "Slider")
+    Slider(slider_num, position_num);
+else if (part == "InnerBoxPrint")
+    InnerBoxPrint();
+else if (part == "OuterBoxPrint1")
+    OuterBoxPrint1();
+else if (part == "OuterBoxPrint2")
+    OuterBoxPrint2();
+else if (part == "SliderPrint")
+    SliderPrint(slider_num, position_num);
+else
+    assert(false);
+    
 
 //InnerBoxPrint();
 //OuterBoxPrint1();
 //OuterBoxPrint2();
-SliderPrint(0, 3);
+//SliderPrint(0, 3);
 
+};
 
+FlatPuzzleBoxPart(part="OuterBox");
 
 
 
