@@ -46,6 +46,12 @@ module FlatPuzzleBoxPart(
     scale_mark_height = 0.3,
     // Width/thickness of scale marking lines
     scale_mark_width = 0.4,
+    primary_scale_mark_type = "compact",
+    secondary_scale_mark_type = "compact",
+    // Used to guess how much space a label will take up.  This should be the ratio of character width to character height, approximately.  Adjust this if scale labels are intersecing the edges.
+    font_width_to_height_ratio = 0.95,
+    // Multiplier to turn a bounding box height into an approximate font point size
+    font_height_to_point_size_multiplier = 0.9,
 
     /* THICKNESSES AND MINOR FEATURE DIMENSIONS */
     // Thicknesses of parts of the inner box
@@ -67,6 +73,9 @@ module FlatPuzzleBoxPart(
     slider_bottom_wing_thick = 1.5,
     // The fraction of the gate hole width/depth that should be indented for false gates
     false_gate_indent_width_frac = 0.2,
+    // The width and depth of the binary pips that mark each slider with its position
+    binary_pips_mark_depth = 0.2,
+    binary_pips_mark_width = 0.5,
 
     /* CLEARANCES AND PLAYS */
     // The amount of sliding play/clearance the inner box has inside the outer box in the Y dimension
@@ -99,6 +108,17 @@ module FlatPuzzleBoxPart(
     slot_end_extra_clearance_y = 0.4,
 
 ) {
+
+
+// Returns true if all elements in the input array are true
+function all_true (ar, i=0) = len(ar) < i ? (ar[i] ? all_true(ar, i+1) : false) : true;
+
+
+// The scales displayed in the left and right margins
+scale_left_margin_type = primary_scale_mark_type;
+scale_left_margin_slider = search(0, slider_scales)[0];
+scale_right_margin_type = secondary_scale_mark_type;
+scale_right_margin_slider = (secondary_scale == undef || len(search(1, slider_scales)) == 0) ? scale_left_margin_slider : search(1, slider_scales)[0];
 
 // Size of interior cavity of inner box.  The opening faces -X
 inner_box_inner_size = inner_size;
@@ -242,8 +262,6 @@ max_detent_positions_by_slider = [ for (i = [ 0 : num_sliders - 1 ]) floor((slid
 detent_peg_spacing_by_slider = [ for (i = [ 0 : num_sliders-1 ]) (max_detent_positions_by_slider[i] - 1) * slider_positions_spacing[i] ];
 // For each slider, whether or not the sliders positions would allow dual detent pegs.
 can_have_dual_detent_peg_by_slider = [ for (i = [ 0 : num_sliders-1 ]) detent_peg_spacing_by_slider[i] >= 0 && (slider_top_wing_length - detent_peg_spacing_by_slider[i]) / 2 <= detent_peg_edge_dist_max ];
-// Returns true if all elements in the input array are true
-function all_true (ar, i=0) = len(ar) < i ? (ar[i] ? all_true(ar, i+1) : false) : true;
 // Single flag for whether sliders should have dual detent pegs
 dual_detent_pegs = all_true(can_have_dual_detent_peg_by_slider);
 // The distance of the detent peg(s) from the edge of the slider
@@ -257,20 +275,17 @@ echo("Slider positions spacing", slider_positions_spacing);
 // How far the false gate impressions are inset
 false_gate_indent_width = slider_gate_width * false_gate_indent_width_frac;
 
-scale_left_margin_type = "compact";
-scale_left_margin_slider = 0;
-scale_right_margin_type = "compact";
-scale_right_margin_slider = 0;
 
 function to_binary_array_helper(n, placeval) = placeval == 1 ? [ n ] : concat([ floor(n / placeval) ], to_binary_array_helper( n - floor(n / placeval) * placeval, placeval / 2));
+// Converts a number into an array of binary digits 0 and 1.  The length of the array is determined by max_n.
 function to_binary_array(n, max_n) = to_binary_array_helper(n, 2 ^ (floor(log(max_n) / log(2))));
 module BinaryPips(n, max_n, width, depth) {
     // Generates a subtractive geometry that will mark a surface with the number in binary.  Surface size is specified as widthxdepth
     // The numeric digits go from left to right along the X axis, centered on the origin.
     // The Y dimension is centered on the origin.
     // The Z dimension is the depth of the marking, configured here.
-    mark_depth = 0.2;
-    mark_width = 0.5;
+    mark_depth = binary_pips_mark_depth;
+    mark_width = binary_pips_mark_width;
     digits = to_binary_array(n, max_n);
     spacing = width / (len(digits) + 1);
     for (digitnum = [ 0 : len(digits) - 1 ])
@@ -293,8 +308,6 @@ module ScaleTickMarks(slider_num, width) {
 
 
 // Determine the font point size such that a character will fit inside the given rectangle.  This is a guesstimate.
-font_width_to_height_ratio = 0.95;
-font_height_to_point_size_multiplier = 0.9;
 function font_size_within_rect(w, h) = min(h * font_height_to_point_size_multiplier, w / font_width_to_height_ratio * font_height_to_point_size_multiplier);
 
 // Full scale with symbol for each position
