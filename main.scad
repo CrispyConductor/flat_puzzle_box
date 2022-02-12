@@ -31,6 +31,12 @@ inner_size = [ 50, 60, 5 ];
 // Depth of the detent hole
 detent_height = 0.7;
 
+// Maximum length of the detent lever arm (from the slider connector piece to the detent peg).  A smaller length may be chosen if possible to fit in two detent pegs.
+detent_lever_arm_length_max = 20.0;
+
+// Minimum length of the detent lever arm.
+detent_lever_arm_length_min = 10.0;
+
 // Defines the width of the margins on the +x and -x side of the box top, as a fraction of the box width
 outer_box_top_margin_frac = 0.1;
 
@@ -190,6 +196,10 @@ module FlatPuzzleBoxPart(
     /* MISC OPTIONS */
     // Depth of the detent hole
     detent_height = 0.7,
+    // Maximum length of the detent lever arm (from the slider connector piece to the detent peg).  A smaller length may be chosen if possible to fit in two detent pegs.
+    detent_lever_arm_length_max = 20,
+    // Minimum length of the detent lever arm.
+    detent_lever_arm_length_min = 10,
     // Defines the width of the margins on the +x and -x side of the box top, as a fraction of the box width
     outer_box_top_margin_frac = 0.1,
     // The width of the separating walls between sliders, as a fraction of the total width of the slider space
@@ -267,7 +277,7 @@ module FlatPuzzleBoxPart(
     // Clearances around box front cutouts for inserting sliders
     outer_box_front_slider_cutout_clearance = 0.2,
     // Clearance between bottom wing of slider and the top rails in the first and last positions
-    bottom_wing_top_rail_clearance = 0.2,
+    bottom_wing_top_rail_clearance = 0.4,
     // Amount of clearance in the X dimension between a pin and its gate when the box is closed.  This translates to slop in opening of the box while locked.
     pin_gate_closed_clearance_x = 0.2,
     // Extra clearance (in addition to inner_box_play_y) between pins and gates in Y dimension
@@ -417,9 +427,10 @@ max_detent_peg_size_y = min(max_detent_peg_size_y_by_slider);
 // Size of the detent peg in the Y dimension (depth)
 detent_peg_size_y = min(detent_height * 2, max_detent_peg_size_y);
 // Minimum Y distance from the Y center of the detent pin on the slider to the edge of the top wing
-detent_peg_edge_dist_min = detent_peg_size_y / 2;
+detent_peg_edge_dist_min = max(detent_peg_size_y / 2, (slider_top_wing_length - slider_connector_length) / 2 - detent_lever_arm_length_max);
 // Maximum distance.  Multiplier is arbitrary and determines the range of how close to the edge the detent peg must be.
-detent_peg_edge_dist_max = 0.3 * ((slider_top_wing_length - slider_connector_length) / 2 - detent_peg_size_y/2);
+//detent_peg_edge_dist_max = 0.3 * ((slider_top_wing_length - slider_connector_length) / 2 - detent_peg_size_y/2);
+detent_peg_edge_dist_max = (slider_top_wing_length - slider_connector_length) / 2 - detent_lever_arm_length_min;
 assert(detent_peg_edge_dist_max > detent_peg_edge_dist_min);
 
 // For each slider, determine whether the slider can have 2 detent pins, or just one.
@@ -439,6 +450,12 @@ echo("Detent edge dist by slider", detent_peg_edge_dist_by_slider);
 echo("Detent peg spacing by slider", detent_peg_spacing_by_slider);
 echo("Max detent positions by slider", max_detent_positions_by_slider);
 echo("Slider positions spacing", slider_positions_spacing);
+echo("Detent lever arm length by slider", [ for (edgedist = detent_peg_edge_dist_by_slider) (slider_top_wing_length - slider_connector_length) / 2 - edgedist ]);
+for (edgedist = detent_peg_edge_dist_by_slider) {
+	// If either of these assertions fail, the constraints on detent_lever_arm_length are probably set too tightly
+	assert(edgedist >= detent_peg_size_y / 2);
+	assert(edgedist <= (slider_top_wing_length - slider_connector_length) / 2 - detent_peg_size_y / 2);
+}
 
 // How far the false gate impressions are inset
 false_gate_indent_width = slider_gate_width * false_gate_indent_width_frac;
@@ -842,6 +859,8 @@ FlatPuzzleBoxPart(
     slider_scales = slider_scales,
     inner_size = inner_size,
     detent_height = detent_height,
+    detent_lever_arm_length_max = detent_lever_arm_length_max,
+    detent_lever_arm_length_min = detent_lever_arm_length_min,
     outer_box_top_margin_frac = outer_box_top_margin_frac,
     slider_separator_width_frac = slider_separator_width_frac,
     min_between_slider_wall_width = min_between_slider_wall_width,
