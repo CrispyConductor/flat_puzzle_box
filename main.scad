@@ -23,7 +23,7 @@ secondary_scale = undef;
 slider_scales = [ 0, 0, 0, 0, 0 ];
 
 // Inner dimensions of box cavity: width, depth, height; when drawer is facing to the right
-inner_size = [ 50, 80, 5 ];
+inner_size = [ 50, 60, 5 ];
 
 
 /* [Misc] */
@@ -185,7 +185,7 @@ module FlatPuzzleBoxPart(
     // Which scale (0 for primary, 1 for secondary) to use for each slider.  This also defines the number of sliders.
     slider_scales = [ 0, 0, 0, 0, 0 ],
     // Inner dimensions of box cavity: width, depth, height; when drawer is facing to the right
-    inner_size = [ 50, 80, 5 ],
+    inner_size = [ 50, 60, 5 ],
 
     /* MISC OPTIONS */
     // Depth of the detent hole
