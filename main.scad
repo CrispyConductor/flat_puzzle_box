@@ -1,4 +1,172 @@
 
+/* [Which Part] */
+
+// Part to render
+part = "InnerBoxPrint"; // [ InnerBoxPrint, OuterBoxPrint1, OuterBoxPrint2, SliderPrint, InnerBox, OuterBox, Slider ]
+
+// Used for Slider part only.  Which slider number this is, 0-indexed.
+slider_num = 0;
+
+// Used for Slider part only.  Which position number this slider is coded for, 0-indexed.
+position_num = 0;
+
+
+/* [Main] */
+
+// The string of position labels to use for the primary scale.
+primary_scale = "0123456789";
+
+// The string of position labels to use for the secondary scale, or undef if only one scale.
+secondary_scale = undef;
+
+// Which scale (0 for primary, 1 for secondary) to use for each slider.  This also defines the number of sliders.
+slider_scales = [ 0, 0, 0, 0, 0 ];
+
+// Inner dimensions of box cavity: width, depth, height; when drawer is facing to the right
+inner_size = [ 50, 80, 5 ];
+
+
+/* [Misc] */
+
+// Depth of the detent hole
+detent_height = 0.7;
+
+// Defines the width of the margins on the +x and -x side of the box top, as a fraction of the box width
+outer_box_top_margin_frac = 0.1;
+
+// The width of the separating walls between sliders, as a fraction of the total width of the slider space
+slider_separator_width_frac = 0.03;
+
+// Minimum absolute width of separating walls between sliders.  If the calculated width is below the minimum, separating walls will be removed entirely.
+min_between_slider_wall_width = 2;
+
+// The length of the connecting piece of the slider, as a fraction of the outer box depth.  Larger values are stronger but reduce travel length and compress symbols.  The multiplier is arbitrarily chosen.  This is the main parameter to tweak for altering travel distance vs slider stabilization in this dimension.
+slider_connector_length_frac = 0.083;
+
+// The width of the connecting piece of the slider, as a fraction of the space between the centers of 2 adjacent sliders.  This also determines slot width.
+slider_connector_width_frac = 0.2;
+
+// Amount the handle on the slider protrudes
+slider_handle_height = 1.5;
+
+// The depth (along the length of the slider) of space that the handle takes up, as a fraction of the length of the slider's top wing
+slider_handle_depth_frac = 0.125;
+
+// Minimum opening span of the slider gates.  This ensures proper printing and proper clearances, but if the scale is too compact, may cause adjacent slider positions to also allow through the pins.
+min_gate_opening = 2.5;
+
+// The width of the slider's gate fin, as a fraction of the width of the right half of the bottom wing.
+slider_gate_width_frac = 0.5;
+
+
+/* [Marks] */
+// Depth of scale markings
+scale_mark_height = 0.3;
+
+// Width/thickness of scale marking lines
+scale_mark_width = 0.4;
+
+// Type of primary scale
+primary_scale_mark_type = "compact"; // [ ticks, full, compact ]
+
+// Type of secondary scale
+secondary_scale_mark_type = "compact"; // [ ticks, full, compact ]
+
+// Used to guess how much space a label will take up.  This should be the ratio of character width to character height, approximately.  Adjust this if scale labels are intersecing the edges.
+font_width_to_height_ratio = 0.95;
+
+// Multiplier to turn a bounding box height into an approximate font point size
+font_height_to_point_size_multiplier = 0.9;
+
+
+/* [Minor Dims] */
+
+// Thickness of inner box walls
+inner_box_wall_thick = 1.2;
+
+// Thickness of inner box bottom
+inner_box_bottom_thick = 0.95;
+
+// Thickness of inner box top
+inner_box_top_thick = 1.5;
+
+// Thickness of the backplate/handle on the end of the inner box
+inner_box_end_plate_thick = 2;
+
+// Distance the inner box handles protrudes to either side of the outer box when closed
+inner_box_side_handle_protrusion = 1.5;
+
+// Minimum thickness at thinnest point of outer box top
+outer_box_min_top_thick = 1.7;
+
+// Outer box wall thicknesses
+outer_box_wall_thick = 1.5;
+
+// Outer box bottom thickness
+outer_box_bottom_thick = 0.95;
+
+// Thickess of the slider top wing plate/detent arm
+slider_top_wing_thick = 1.2;
+
+// Thickness of the bottom wing; thicker values are stiffer but bulkier
+slider_bottom_wing_thick = 1.5;
+
+// The fraction of the gate hole width/depth that should be indented for false gates
+false_gate_indent_width_frac = 0.2;
+
+// The width and depth of the binary pips that mark each slider with its position
+binary_pips_mark_depth = 0.2;
+
+// Width of binary pips
+binary_pips_mark_width = 0.5;
+
+/* [Clearances] */
+
+// The amount of sliding play/clearance the inner box has inside the outer box in the Y dimension
+inner_box_play_y = 0.6;
+
+// Minimum height of intersection between pins on inner box and gate fins on the sliders.
+gate_pin_contact_height = 1.5;
+
+// Amount of play/clearance between slider wings and the slot it rides in.
+slider_wing_play_z = 0.2;
+
+// The minimum amount of clearance between the gates on the bottom of the sliders, and the top of the inner box.
+gate_inner_box_top_clearance_z = 0.2;
+
+// Minimum clearance between the tops of the pins on the inner box and the bottoms of the slider wings
+pin_wing_clearance_z = 0.2;
+
+// The clearance between the tops of the rails on the inner box and the bottom of the outer box lid.
+inner_box_top_rail_play_z = 0.3;
+
+// Clearance between each slider and either the adjacent slider or the slot wall in the X dimension
+slider_top_wing_clearance_x = 0.3;
+
+// Amount of play the slider has in the X dimension
+slider_play_x = 0.3;
+
+// Extra clearance between bottom of slider gate and top of inner box, in addition to existing plays and clearances.
+slider_gate_inner_box_top_clearance_extra = 0;
+
+// Clearances around box front cutouts for inserting sliders
+outer_box_front_slider_cutout_clearance = 0.2;
+
+// Clearance between bottom wing of slider and the top rails in the first and last positions
+bottom_wing_top_rail_clearance = 0.2;
+
+// Amount of clearance in the X dimension between a pin and its gate when the box is closed.  This translates to slop in opening of the box while locked.
+pin_gate_closed_clearance_x = 0.2;
+
+// Extra clearance (in addition to inner_box_play_y) between pins and gates in Y dimension
+pin_gate_clearance_y_extra = 0.2;
+
+// Distance to extend slot length by to give a more positive detent click
+slot_end_extra_clearance_y = 0.4;
+
+
+
+
 module FlatPuzzleBoxPart(
     /* OPTIONS TO SELECT WHAT PART TO MAKE */
     // Which part of the box to create.  Values are "InnerBox", "OuterBox", or "Slider" for the parts in their native orientations.  For the printable versions, use "InnerBoxPrint", "OuterBoxPrint1", "OuterBoxPrint2", or "SliderPrint".
@@ -662,11 +830,58 @@ else
 
 };
 
-FlatPuzzleBoxPart(part="OuterBox");
 
 
 
-
-
+FlatPuzzleBoxPart(
+    part = part,
+    slider_num = slider_num,
+    position_num = position_num,
+    primary_scale = primary_scale,
+    secondary_scale = secondary_scale,
+    slider_scales = slider_scales,
+    inner_size = inner_size,
+    detent_height = detent_height,
+    outer_box_top_margin_frac = outer_box_top_margin_frac,
+    slider_separator_width_frac = slider_separator_width_frac,
+    min_between_slider_wall_width = min_between_slider_wall_width,
+    slider_connector_length_frac = slider_connector_length_frac,
+    slider_connector_width_frac = slider_connector_width_frac,
+    slider_handle_height = slider_handle_height,
+    slider_handle_depth_frac = slider_handle_depth_frac,
+    min_gate_opening = min_gate_opening,
+    slider_gate_width_frac = slider_gate_width_frac,
+    scale_mark_height = scale_mark_height,
+    scale_mark_width = scale_mark_width,
+    font_width_to_height_ratio = font_width_to_height_ratio,
+    font_height_to_point_size_multiplier = font_height_to_point_size_multiplier,
+    inner_box_wall_thick = inner_box_wall_thick,
+    inner_box_bottom_thick = inner_box_bottom_thick,
+    inner_box_top_thick = inner_box_top_thick,
+    inner_box_end_plate_thick = inner_box_end_plate_thick,
+    inner_box_side_handle_protrusion = inner_box_side_handle_protrusion,
+    outer_box_min_top_thick = outer_box_min_top_thick,
+    outer_box_wall_thick = outer_box_wall_thick,
+    outer_box_bottom_thick = outer_box_bottom_thick,
+    slider_top_wing_thick = slider_top_wing_thick,
+    slider_bottom_wing_thick = slider_bottom_wing_thick,
+    false_gate_indent_width_frac = false_gate_indent_width_frac,
+    binary_pips_mark_depth = binary_pips_mark_depth,
+    binary_pips_mark_width = binary_pips_mark_width,
+    inner_box_play_y = inner_box_play_y,
+    gate_pin_contact_height = gate_pin_contact_height,
+    slider_wing_play_z = slider_wing_play_z,
+    gate_inner_box_top_clearance_z = gate_inner_box_top_clearance_z,
+    pin_wing_clearance_z = pin_wing_clearance_z,
+    inner_box_top_rail_play_z = inner_box_top_rail_play_z,
+    slider_top_wing_clearance_x = slider_top_wing_clearance_x,
+    slider_play_x = slider_play_x,
+    slider_gate_inner_box_top_clearance_extra = slider_gate_inner_box_top_clearance_extra,
+    outer_box_front_slider_cutout_clearance = outer_box_front_slider_cutout_clearance,
+    bottom_wing_top_rail_clearance = bottom_wing_top_rail_clearance,
+    pin_gate_closed_clearance_x = pin_gate_closed_clearance_x,
+    pin_gate_clearance_y_extra = pin_gate_clearance_y_extra,
+    slot_end_extra_clearance_y = slot_end_extra_clearance_y
+);
 
 
