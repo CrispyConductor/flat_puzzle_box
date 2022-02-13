@@ -17,12 +17,19 @@ def value_to_scad(val):
     else:
         return json.dumps(val)
 
+def get_scad_file():
+    f1 = os.path.join(args.outdir, 'main.scad')
+    if os.path.exists(f1):
+        return f1
+    else:
+        return 'main.scad'
+
 def make_scad_args(variables, outfile):
     args = [ 'openscad', '-o', outfile ]
     for varname, value in variables.items():
         args.append('-D')
         args.append(varname + '=' + value_to_scad(value))
-    args.append('./main.scad')
+    args.append(get_scad_file())
     return args
 
 with open(args.json_config, 'r') as f:
