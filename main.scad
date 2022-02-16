@@ -150,7 +150,7 @@ inner_box_top_rail_play_z = 0.3;
 slider_top_wing_clearance_x = 0.3;
 
 // Amount of play the slider has in the X dimension
-slider_play_x = 0.3;
+slider_play_x = 0.45;
 
 // Extra clearance between bottom of slider gate and top of inner box, in addition to existing plays and clearances.
 slider_gate_inner_box_top_clearance_extra = 0;
@@ -164,11 +164,14 @@ bottom_wing_top_rail_clearance = 0.2;
 // Amount of clearance in the X dimension between a pin and its gate when the box is closed.  This translates to slop in opening of the box while locked.
 pin_gate_closed_clearance_x = 0.2;
 
+// Amount of extra clearance between the back side of an inner box pin and the previous gate it runs next to.
+pin_next_gate_closed_clearance_x = 0.2;
+
 // Extra clearance (in addition to inner_box_play_y) between pins and gates in Y dimension
 pin_gate_clearance_y_extra = 0.2;
 
 // Distance to extend slot length by to give a more positive detent click
-slot_end_extra_clearance_y = 0.4;
+slot_end_extra_clearance_y = 0.55;
 
 
 
@@ -271,7 +274,7 @@ module FlatPuzzleBoxPart(
     // Clearance between each slider and either the adjacent slider or the slot wall in the X dimension
     slider_top_wing_clearance_x = 0.3,
     // Amount of play the slider has in the X dimension
-    slider_play_x = 0.3,
+    slider_play_x = 0.45,
     // Extra clearance between bottom of slider gate and top of inner box, in addition to existing plays and clearances.
     slider_gate_inner_box_top_clearance_extra = 0,
     // Clearances around box front cutouts for inserting sliders
@@ -279,11 +282,13 @@ module FlatPuzzleBoxPart(
     // Clearance between bottom wing of slider and the top rails in the first and last positions
     bottom_wing_top_rail_clearance = 0.4,
     // Amount of clearance in the X dimension between a pin and its gate when the box is closed.  This translates to slop in opening of the box while locked.
-    pin_gate_closed_clearance_x = 0.2,
+    pin_gate_closed_clearance_x = 0.3,
+    // Amount of extra clearance between the back side of an inner box pin and the previous gate it runs next to.
+    pin_next_gate_closed_clearance_x = 0.2,
     // Extra clearance (in addition to inner_box_play_y) between pins and gates in Y dimension
     pin_gate_clearance_y_extra = 0.2,
     // Distance to extend slot length by to give a more positive detent click
-    slot_end_extra_clearance_y = 0.4,
+    slot_end_extra_clearance_y = 0.55,
 
 ) {
 
@@ -417,7 +422,7 @@ echo("slider_gate_opening", slider_gate_opening);
 inner_box_top_rail_depth = slider_positions_y_begin - slider_gate_depth / 2 - outer_box_wall_thick - bottom_wing_top_rail_clearance;
 
 // Size of pin in X dimension.  This is calculated to fit underneath the individual slider's top wing footprint.
-inner_box_pin_width = slider_top_wing_width / 2 + slider_bottom_wing_width_right - slider_gate_width - pin_gate_closed_clearance_x;
+inner_box_pin_width = slider_top_wing_width / 2 + slider_bottom_wing_width_right - slider_gate_width - pin_gate_closed_clearance_x - pin_next_gate_closed_clearance_x;
 // Size of pins in Y dimension
 inner_box_pin_depth = min(slider_gate_opening) - inner_box_play_y - 2 * pin_gate_clearance_y_extra;
 
@@ -743,7 +748,7 @@ module InnerBox() {
                 cube([ inner_box_main_outer_size.x, inner_box_top_rail_depth, inner_box_main_outer_size.z + inner_box_top_rail_height ]);
             // Pins
             for (slider_x = sliders_x) // note: this is relative to the outer box so needs to be offset
-                translate([ slider_x - outer_box_wall_thick + slider_bottom_wing_width_right - slider_gate_width, inner_box_main_outer_size.y / 2, inner_box_main_outer_size.z ])
+                translate([ slider_x - outer_box_wall_thick + slider_bottom_wing_width_right - slider_gate_width - pin_gate_closed_clearance_x, inner_box_main_outer_size.y / 2, inner_box_main_outer_size.z ])
                     Pin();
         };
         // Inner cavity
@@ -899,6 +904,7 @@ FlatPuzzleBoxPart(
     outer_box_front_slider_cutout_clearance = outer_box_front_slider_cutout_clearance,
     bottom_wing_top_rail_clearance = bottom_wing_top_rail_clearance,
     pin_gate_closed_clearance_x = pin_gate_closed_clearance_x,
+    pin_next_gate_closed_clearance_x = pin_next_gate_closed_clearance_x,
     pin_gate_clearance_y_extra = pin_gate_clearance_y_extra,
     slot_end_extra_clearance_y = slot_end_extra_clearance_y
 );
