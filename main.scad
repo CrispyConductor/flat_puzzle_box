@@ -135,7 +135,7 @@ inner_box_play_y = 0.6;
 gate_pin_contact_height = 1.5;
 
 // Amount of play/clearance between slider wings and the slot it rides in.
-slider_wing_play_z = 0.2;
+slider_wing_play_z = 0.5;
 
 // The minimum amount of clearance between the gates on the bottom of the sliders, and the top of the inner box.
 gate_inner_box_top_clearance_z = 0.2;
@@ -264,7 +264,7 @@ module FlatPuzzleBoxPart(
     // Minimum height of intersection between pins on inner box and gate fins on the sliders.
     gate_pin_contact_height = 1.5,
     // Amount of play/clearance between slider wings and the slot it rides in.
-    slider_wing_play_z = 0.2,
+    slider_wing_play_z = 0.5,
     // The minimum amount of clearance between the gates on the bottom of the sliders, and the top of the inner box.
     gate_inner_box_top_clearance_z = 0.2,
     // Minimum clearance between the tops of the pins on the inner box and the bottoms of the slider wings
